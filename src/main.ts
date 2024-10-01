@@ -9,6 +9,7 @@ Bun.serve({
 
         // Serve static routes
         // Base route is / which turns into index.html
-        return static_routes((path !== "/") ? path.slice(1) : "index.html");
+        const resp = static_routes((path !== "/") ? path.slice(1) : "index.html");
+        return resp;
     }
 })

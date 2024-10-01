@@ -14,10 +14,13 @@
   },
   "scripts": {
     "start": "DEV_ENV=true bun run --watch src/main.ts",
-    "start:release": "bun run src/main.ts"
+    "start:release": "bun run src/main.ts",
+    "build": "BUILD_JSX=true bun run src/compile.ts",
+    "clean": "rm -rf ./static/out/"
   },
   "scriptComments": {
     "start": "Builds static files and runs server with hot reloading of all files. Enables API error returns.",
-    "start:release": "Builds static files, minimizes them and runs the server."
+    "start:release": "Builds static files, minimizes them and runs the server.",
+    "build": "Builds all jsx files"
   }
 }
