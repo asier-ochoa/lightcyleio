@@ -12,7 +12,26 @@
     <div>
         This is our game xd
     </div>
-    <canvas width='800' height='600'>
+    <div id='debug_info'>
+        <div class='debug_value' value='game_state.player_pos.y'>
+            undefinedxfsedf
+        </div>
+        <div class='debug_value' value='dt'>
+            undefineds
+        </div>
+    </div>
+    <canvas id='main_window' width='800' height='600' style="border: 2px black solid;">
     </canvas>
 </body>
+<style>
+    #debug_info {
+        border-radius: 16px;
+        background-color: skyblue;
+        padding: 6px;
+        margin: 6px;
+    }
+    .debug_value {
+        margin: 6px;
+    }
+</style>
 </html>
