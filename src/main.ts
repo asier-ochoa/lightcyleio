@@ -1,4 +1,20 @@
-import {static_routes, static_file_map} from "./frontend";
+import * as fs from "node:fs";
+
+type FilePath = string;
+const read_static_files = ((cur_path: FilePath) => {
+    var files: Set<FilePath> = new Set();
+    fs.readdirSync(`./static/${cur_path}`, {withFileTypes: true}).forEach(f => {
+        // Recursive file read
+        if (f.isDirectory()) {
+            files = files.union(read_static_files(`${cur_path}${f.name}/`));
+        } else {
+            files.add(`./static/${cur_path}${f.name}`);
+        }
+    });
+    return files;
+});
+const static_files = read_static_files("");
+console.log(static_files);
 
 Bun.serve({
     fetch(req: Request) {
@@ -9,7 +25,13 @@ Bun.serve({
 
         // Serve static routes
         // Base route is / which turns into index.html
-        const resp = static_routes((path !== "/") ? path.slice(1) : "index.html");
-        return resp;
-    }
+        if (path === "/") return new Response(Bun.file("./static/index.html"));
+        if (static_files.has(`./static/${path}`)) {
+            return new Response(Bun.file(`./static/${path}`));
+        } else {
+            return new Response("Not found", {status: 404});
+        }   
+    },
+    
+    port: 3000
 })
