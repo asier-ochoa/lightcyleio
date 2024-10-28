@@ -13,17 +13,19 @@
         This is our game xd
     </div>
     <div id='debug_info'>
-        <div class='debug_value' value='game_state.player_pos.y'>
-            undefinedxfsedf
-        </div>
-        <div class='debug_value' value='dt'>
-            undefineds
+        <div class='debug_value' value='game_state.player_pos'></div>
+        <div class='debug_value' value='deltatime'></div>
+        <div>
+            fps: <div class='debug_value' value='fps'></div>
         </div>
     </div>
-    <canvas id='main_window' width='800' height='600' style="border: 2px black solid;">
+    <canvas id='main_window' width='800' height='600'>
     </canvas>
 </body>
 <style>
+    #main_window {
+        border: 2px black solid;
+    }
     #debug_info {
         border-radius: 16px;
         background-color: skyblue;
