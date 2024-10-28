@@ -1,3 +1,6 @@
+import * as THREE from 'three'
+import * as hey from './modules/three.js' 
+
 const Direction = Object.freeze({
     up: Symbol('up'),
     down: Symbol('down'),
@@ -45,9 +48,17 @@ addEventListener("DOMContentLoaded", () => {
     });
     const debug_values = register_debug_values(document.getElementById('debug_info').children);
 
-    /** @type {HTMLCanvasElement} **/
-    const game_canvas = document.getElementById("main_window");
-    const context = game_canvas.getContext("2d");
+
+    // Setting up three (scene, camera, and renderer)
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1 , 1000);
+
+    const canvas = document.getElementById("main_window");
+    const renderer = new THREE.WebGLRenderer( {
+        canvas: canvas
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    
 
     // Set up web socket
  
@@ -95,26 +106,20 @@ addEventListener("DOMContentLoaded", () => {
 
         // Draw game state
         {
-           context.clearRect(0, 0, game_canvas.width, game_canvas.height);
-
-           // Draw player
-           const player_pos = game_state.player_pos;
-           const bbox = game_params.player_bbox;
-           context.fillRect(
-            player_pos.x - bbox.width / 2,
-            player_pos.y - bbox.height / 2,
-            bbox.width,
-            bbox.height
-           );
+            const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+            const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+            const cube = new THREE.Mesh( geometry, material );
+            scene.add( cube );
+            
+            camera.position.z = 5;
         }
 
-        // Update DOM UI
-        {
-            Object.entries(debug_values).forEach((e) => e[1](eval(e[0])).toString());
+        function animate() {
+            renderer.render( scene, camera );
         }
 
-        game_state.last_timestamp = t;
-        requestAnimationFrame(main_loop)
+        renderer.setAnimationLoop( animate );
     })
-    requestAnimationFrame(main_loop);
+
+    main_loop();
 });

@@ -6,7 +6,17 @@
     <title>Page Title</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
-    <script src='main.js'></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@v0.169.0/build/three.module.js"
+            }
+        }
+    </script>
+    <script type="module" src='main.js'></script>
+
+   
+      
 </head>
 <body>
     <div>
@@ -19,7 +29,7 @@
             fps: <div class='debug_value' value='fps'></div>
         </div>
     </div>
-    <canvas id='main_window' width='800' height='600'>
+    <canvas id='main_window' width='800' height='600' style="border: 2px black solid;">
     </canvas>
 </body>
 <style>
