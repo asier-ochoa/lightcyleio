@@ -1,4 +1,5 @@
 import * as fs from "node:fs";
+import Api from "./api.ts";
 
 type FilePath = string;
 const read_static_files = ((cur_path: FilePath) => {
@@ -20,7 +21,12 @@ Bun.serve({
     fetch(req: Request) {
         const path = new URL(req.url).pathname;
         if (path.startsWith("/api")) {
-            return new Response("Api under construction", {status: 204});
+            const api_func = Api[path.substring(5)];
+            if (api_func !== undefined) {
+                return api_func(this, req);
+            } else {
+                return new Response("Not found", {status: 404});
+            }
         }
 
         // Serve static routes
@@ -33,6 +39,13 @@ Bun.serve({
             return new Response("Not found", {status: 404});
         }   
     },
+    websocket: {
+        open(ws) {
+            console.log(`Client with address ${ws.remoteAddress} connected`);
+        },
+        message(ws, message) {
 
+        }
+    },
     port: 3000
 })

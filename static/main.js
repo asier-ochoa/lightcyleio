@@ -15,6 +15,8 @@ const game_params = Object.freeze({
 })
 
 const game_state = {
+    // Holds ref to web socket
+    connection: null,
     player_pos: {
         x: 400,
         y: 400,
@@ -50,6 +52,15 @@ addEventListener("DOMContentLoaded", () => {
     const context = game_canvas.getContext("2d");
 
     // Set up web socket
+    /** @type {HTMLButtonElement} */
+    const connection_button = document.getElementById("ws_connect");
+    connection_button.addEventListener("click", async ev => {
+        console.log("Attempting connection");
+        game_state.connection = new WebSocket("/api/connect");
+        game_state.connection.addEventListener("open", e => {
+            console.log("connected!")
+        });
+    })
  
     // Set up main loop
     const main_loop = ((t) => {
