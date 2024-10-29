@@ -6,17 +6,20 @@
     <title>Page Title</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
-    <script src='main.js'></script>
+    <script type='module' src='main.js'></script>
 </head>
 <body>
     <div>
         This is our game xd
     </div>
-    <button id="ws_connect">
+    <button id="ws_connect" class="control_buttons">
         Connect to WS
     </button>
+    <button id="spawn" class="control_buttons">
+        Spawn
+    </button>
     <div id='debug_info'>
-        <div class='debug_value' value='game_state.player_pos'></div>
+        <div class='debug_value' value='game_state.client_player'></div>
         <div class='debug_value' value='deltatime'></div>
         <div>
             fps: <div class='debug_value' value='fps'></div>
@@ -37,6 +40,9 @@
     }
     .debug_value {
         margin: 6px;
+    }
+    .control_buttons {
+        display: inline;
     }
 </style>
 </html>

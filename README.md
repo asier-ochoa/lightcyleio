@@ -19,7 +19,7 @@ This repo is divided into 2 parts: the frontend and backend server. The backend 
 ## Game session connection workflow
 This describes the steps backend takes to establish a connection from a new player
 - Received get request to `/api/connect`
-- Establish websocket connection with client
+- Establish websocket connection with client by storing in `connections` array in `ws.ts`
 - Send `new_player` message kind to worker
 - Worker returns `new_player_id` message
 - Player id gets sent back to client

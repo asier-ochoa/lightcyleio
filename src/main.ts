@@ -1,6 +1,9 @@
 import * as fs from "node:fs";
 import Api from "./api.ts";
-import {MessageKind, NewPlayerMessage} from "./ws.ts";
+import {connections, NewPlayerIdMessage, SpawnMessage, SpawnResponseMessage } from "./ws.ts";
+import {MessageKind, NewPlayerMessage, type Message} from "./ws.ts";
+import type { ServerWebSocket } from "bun";
+import * as s from "./serial.js";
 
 type FilePath = string;
 const read_static_files = ((cur_path: FilePath) => {
@@ -21,10 +24,6 @@ console.log(static_files, '\n')
 
 // Run game simulation
 const game_worker = new Worker("./src/game.ts");
-game_worker.onmessage = ev => {
-    console.log(`Received from game logic worker:`)
-    console.log(JSON.stringify(ev.data, null, 4))
-}
 
 // Declare server
 Bun.serve({
@@ -50,12 +49,39 @@ Bun.serve({
         }   
     },
     websocket: {
-        open(ws) {
+        open(ws: ServerWebSocket) {
             console.log(`Client with address ${ws.remoteAddress} connected`);
             game_worker.postMessage(new NewPlayerMessage())
+            game_worker.onmessage = ev => {
+                console.log(`Received from game logic worker:`)
+                console.log(JSON.stringify(ev.data, null, 4))
+
+                const outer_msg: Message = ev.data;
+                // Store connection
+                if (outer_msg.kind === MessageKind.new_player_id) {
+                    const msg = outer_msg as NewPlayerIdMessage;
+                    connections[msg.id] = ws;
+                    connections[msg.id].send(s.serialize(msg), true);
+                }
+                if (outer_msg.kind === MessageKind.spawn_response) {
+                    const msg = outer_msg as SpawnResponseMessage;
+                    const conn = connections[msg.player_id];
+                    conn.send(s.serialize(msg), true);
+                }
+            }
         },
         message(ws, message) {
-            
+            const outer_msg = s.deserialize(message) as Message;
+            switch (outer_msg.kind) {
+                case MessageKind.spawn:
+                    console.log(message);
+                    const msg = outer_msg as SpawnMessage;
+                    game_worker.postMessage(outer_msg);
+                    break;
+                default:
+                    console.log("Error, unknown message kind received from client")
+                    break;
+            }
         }
     },
     port: 3000
