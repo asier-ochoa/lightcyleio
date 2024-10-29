@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import Api from "./api.ts";
+import {MessageKind, NewPlayerMessage} from "./ws.ts";
 
 type FilePath = string;
 const read_static_files = ((cur_path: FilePath) => {
@@ -15,8 +16,17 @@ const read_static_files = ((cur_path: FilePath) => {
     return files;
 });
 const static_files = read_static_files("");
-console.log(static_files);
+console.log("Registered the following static files:");
+console.log(static_files, '\n')
 
+// Run game simulation
+const game_worker = new Worker("./src/game.ts");
+game_worker.onmessage = ev => {
+    console.log(`Received from game logic worker:`)
+    console.log(JSON.stringify(ev.data, null, 4))
+}
+
+// Declare server
 Bun.serve({
     fetch(req: Request) {
         const path = new URL(req.url).pathname;
@@ -42,9 +52,10 @@ Bun.serve({
     websocket: {
         open(ws) {
             console.log(`Client with address ${ws.remoteAddress} connected`);
+            game_worker.postMessage(new NewPlayerMessage())
         },
         message(ws, message) {
-
+            
         }
     },
     port: 3000
