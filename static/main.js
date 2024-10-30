@@ -1,27 +1,26 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/Addons.js';
 
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+import { createScene } from './scene.js';
+import { createPlayer } from './player.js';
+import { createCamera } from './camera.js';
 
-const canvas = document.getElementById("main_window");
-const renderer = new THREE.WebGLRenderer({
-    canvas:canvas
-});
-renderer.setSize( window.innerWidth, window.innerHeight );
+// Creating scene. 
+const [scene, renderer] = createScene();
+
+// Camera
+const camera = createCamera();
+
+// Player
+const _ = createPlayer(scene);
 
 
-const geometry = new THREE.BoxGeometry( 1, 1, 1 );
-const material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-const cube = new THREE.Mesh( geometry, material );
-scene.add( cube );
 
-camera.position.z = 5;
 
+
+// Game Loop
 function animate() {
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
-
+    
 	renderer.render( scene, camera );
 }
+
 renderer.setAnimationLoop( animate );
