@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import Api from "./api.ts";
-import {connections, NewPlayerIdMessage, SpawnMessage, SpawnResponseMessage } from "./ws.ts";
+import {connections, DirectionRequestMessage, NewPlayerIdMessage, PlayerDisconnectMessage, PlayerPositionMessage, SpawnMessage, SpawnResponseMessage } from "./ws.ts";
 import {MessageKind, NewPlayerMessage, type Message} from "./ws.ts";
 import type { ServerWebSocket } from "bun";
 import * as s from "./serial.js";
@@ -53,8 +53,8 @@ Bun.serve({
             console.log(`Client with address ${ws.remoteAddress} connected`);
             game_worker.postMessage(new NewPlayerMessage())
             game_worker.onmessage = ev => {
-                console.log(`Received from game logic worker:`)
-                console.log(JSON.stringify(ev.data, null, 4))
+                // console.log(`Received from game logic worker:`)
+                // console.log(JSON.stringify(ev.data, null, 4))
 
                 const outer_msg: Message = ev.data;
                 // Store connection
@@ -63,9 +63,22 @@ Bun.serve({
                     connections[msg.id] = ws;
                     connections[msg.id].send(s.serialize(msg), true);
                 }
+                // Respond to spawning
                 if (outer_msg.kind === MessageKind.spawn_response) {
                     const msg = outer_msg as SpawnResponseMessage;
                     const conn = connections[msg.player_id];
+                    conn.send(s.serialize(msg), true);
+                }
+                // Send a player position
+                if (outer_msg.kind === MessageKind.player_position) {
+                    const msg = outer_msg as PlayerPositionMessage;
+                    const conn = connections[msg.broadcast_id];
+                    conn.send(s.serialize(msg), true);
+                }
+                // Notify of a disconnected player
+                if (outer_msg.kind === MessageKind.player_disconnect) {
+                    const msg = outer_msg as PlayerDisconnectMessage;
+                    const conn = connections[msg.broadcast_id!];
                     conn.send(s.serialize(msg), true);
                 }
             }
@@ -73,16 +86,32 @@ Bun.serve({
         message(ws, message) {
             const outer_msg = s.deserialize(message) as Message;
             switch (outer_msg.kind) {
-                case MessageKind.spawn:
-                    console.log(message);
+                case MessageKind.spawn: {
                     const msg = outer_msg as SpawnMessage;
-                    game_worker.postMessage(outer_msg);
+                    game_worker.postMessage(msg);
                     break;
+                }
+                case MessageKind.direction_request: {
+                    const msg = outer_msg as DirectionRequestMessage
+                    game_worker.postMessage(msg)
+                    break;
+                }
                 default:
-                    console.log("Error, unknown message kind received from client")
+                    console.log(`Error, unknown message kind received from client: ${outer_msg.kind}`);
                     break;
             }
-        }
+        },
+        close(ws, code, reason) {
+            // Linear search through the connections to find id and then close it in game loop
+            const disconnected = Object.entries(connections).filter(([_, socket]) => socket === ws);
+            if (disconnected.length < 1) {
+                console.log("Error: couldn't find ID of player that just disconnected");
+            } else {
+                const id = Number(disconnected[0][0]);
+                game_worker.postMessage(new PlayerDisconnectMessage(id, null));
+                delete connections[id];
+            }
+        },
     },
     port: 3000
 })
