@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import Api from "./api.ts";
-import {connections, DirectionRequestMessage, NewPlayerIdMessage, PlayerDisconnectMessage, PlayerPositionMessage, SpawnMessage, SpawnResponseMessage } from "./ws.ts";
+import {connections, DirectionRequestMessage, NewPlayerIdMessage, PlayerDisconnectMessage, PlayerGripMessage, PlayerPositionMessage, SpawnMessage, SpawnResponseMessage } from "./ws.ts";
 import {MessageKind, NewPlayerMessage, type Message} from "./ws.ts";
 import type { ServerWebSocket } from "bun";
 import * as s from "./serial.js";
@@ -79,6 +79,12 @@ Bun.serve({
                 if (outer_msg.kind === MessageKind.player_disconnect) {
                     const msg = outer_msg as PlayerDisconnectMessage;
                     const conn = connections[msg.broadcast_id!];
+                    conn.send(s.serialize(msg), true);
+                }
+                // Send player their grip
+                if (outer_msg.kind === MessageKind.player_grip) {
+                    const msg = outer_msg as PlayerGripMessage;
+                    const conn = connections[msg.id];
                     conn.send(s.serialize(msg), true);
                 }
             }

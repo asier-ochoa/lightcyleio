@@ -8,7 +8,9 @@ export enum MessageKind {
     spawn_response = 3,
     player_position = 4,
     direction_request = 5,
-    player_disconnect = 6
+    player_disconnect = 6,
+    player_trail = 7,
+    player_grip = 8,
 }
 
 export interface Message {
@@ -64,7 +66,25 @@ export class PlayerDisconnectMessage implements Message {
     kind = MessageKind.player_disconnect
     constructor (
         public dc_id: number,
-        public broadcast_id: number | null,
+        public broadcast_id: number | null
+    ) {}
+}
+
+export class PlayerTrailMessage implements Message {
+    kind = MessageKind.player_trail
+    constructor (
+        public player_id: number,
+        public broadcast_id: number,
+        public segments: {x: number, y: number}[]
+    ) {}
+}
+
+export class PlayerGripMessage implements Message {
+    kind = MessageKind.player_grip
+    constructor (
+        public id: number,
+        public cur_grip: number,
+        public regen_rate: number
     ) {}
 }
 

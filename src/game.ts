@@ -1,15 +1,18 @@
-import { DirectionRequestMessage, MessageKind, NewPlayerIdMessage, PlayerDisconnectMessage, PlayerPositionMessage, SpawnMessage, SpawnResponseMessage, type Message } from './ws';
+import { DirectionRequestMessage, MessageKind, NewPlayerIdMessage, PlayerDisconnectMessage, PlayerGripMessage, PlayerPositionMessage, SpawnMessage, SpawnResponseMessage, type Message } from './ws';
 
 declare var self: Worker;
 
 const game_props = {
     // Given in seconds
-    simulation_tick_time: 1/10,
+    simulation_tick_time: 1/20,
     base_player_speed: 50,
     arena_bounds: {
         width: 800,
         height: 600
-    }
+    },
+    turn_grip_cost: 20,
+    grip_base_regen: 200, // Given in points per second
+    max_grip: 100
 }
 
 export enum Direction {
@@ -19,17 +22,37 @@ export enum Direction {
     right
 };
 
+// Game mechanic:
+// - Turning is a resource on a meter. The bar is called grip and goes from 0 to 100.
+//   Each turn takes 20 points from said bar. You gain ${grip_base_regen} points per second at base score.
+//   The faster you go, the slower it should regenerate.
+
 type Player = {
     alive: boolean,
     pos: {x: number, y: number},
     direction: Direction,
     // Used to indicate a command to turn
-    requested_direction: Direction | null
+    requested_direction: Direction | null,
+    grip: number,
+    score: number,
+    // Trail is null when player is dead
+    trail: Trail | null
 };
+
+type Trail = {
+    owner_id: number,
+    start_tick: number,
+    // End tick is null when this is the first segment
+    end_tick: number | null,
+    end_pos: {x: number, y: number},
+    next_segment: Trail | null,
+}
 
 class GameState {
     players: {[id: number]: Player} = {}
     player_count: number = 0
+    // Tracks the current tick of the simulation
+    current_tick: number = 0
 };
 
 let state = new GameState();
@@ -43,7 +66,10 @@ const create_player = (state: GameState) => {
         alive: false,
         pos: {x: 0, y: 0},
         direction: Direction.up,
-        requested_direction: null 
+        requested_direction: null ,
+        grip: game_props.max_grip,
+        score: 0,
+        trail: null
     };
     state.player_count += 1;
     console.log(`New player with id ${new_id} created`);
@@ -61,6 +87,7 @@ const spawn_player = (state: GameState, id: number) => {
             x: Math.floor(Math.random() * game_props.arena_bounds.width),
             y: Math.floor(Math.random() * game_props.arena_bounds.height)
         };
+        player.grip = game_props.max_grip;
         player.direction = Direction.up;
         console.log(`Player with id ${id} spawned at pos x: ${player.pos.x} y: ${player.pos.y}`);
         return true;
@@ -84,6 +111,7 @@ const remove_player = (state: GameState, id: number) => {
     
     // Broadcast to every player the removed player
     Object.keys(state.players).forEach(e => postMessage(new PlayerDisconnectMessage(id, Number(e))));
+    console.log(`Player with id ${id} disconnected`);
 }
 
 const game_loop = async () => {
@@ -94,13 +122,22 @@ const game_loop = async () => {
     const alive_players_arr = players_arr.filter(([_, p]) => p.alive);
     {
         // Update players' requested direction
-        alive_players_arr.filter(([_, p]) => p.requested_direction !== null).forEach(([_, p]) => {
-            p.direction = p.requested_direction!;
+        alive_players_arr.filter(
+            ([_, p]) => p.requested_direction !== null && p.requested_direction !== p.direction
+        ).forEach(([_, p]) => {
+            // Check if player has enough grip and deduct
+            if (p.grip - game_props.turn_grip_cost >= 0){
+                p.direction = p.requested_direction!;
+                p.grip -= game_props.turn_grip_cost;
+            }
             p.requested_direction = null;
         })
 
-        // Move players according to their direction
+        // Move players according to their direction and regen their grip
         alive_players_arr.forEach(([_, p]) => {
+            if (p.grip < game_props.max_grip) {
+                p.grip += game_props.turn_grip_cost * game_props.simulation_tick_time;
+            }
             switch (p.direction) {
                 case Direction.up:
                     p.pos.y += game_props.base_player_speed * game_props.simulation_tick_time;
@@ -126,7 +163,15 @@ const game_loop = async () => {
                 postMessage(new PlayerPositionMessage(Number(bid), Number(id), p.pos.x, p.pos.y))
             });
         });
+
+        // Broadcast their grip to every player
+        alive_players_arr.forEach(([id, p]) => {
+            const player_id = Number(id);
+            postMessage(new PlayerGripMessage(player_id, state.players[player_id].grip, game_props.grip_base_regen));
+        });
     }
+
+    state.current_tick += 1;
 
     const time_elapsed_in_tick = (new Date()).getMilliseconds() - time.getMilliseconds();
     // Expressed in ms
@@ -155,6 +200,7 @@ self.onmessage = ev => {
         }
         case MessageKind.direction_request: {
             const msg = outer_message as DirectionRequestMessage;
+            console.log(`Player ID ${msg.player_id} requested dir change at tick ${state.current_tick}`)
             set_player_direction(state, msg.player_id, msg.direction);
             break;
         }

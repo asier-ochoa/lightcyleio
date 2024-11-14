@@ -29,7 +29,8 @@ const game_state = {
         alive: false,
         toString() {
             return `id: ${this.id} x: ${this.pos.x}, y: ${this.pos.y}`;
-        }
+        },
+        grip: 0,
     },
     // Same as client_player but without id, id as key
     other_players: {},
@@ -88,6 +89,9 @@ connection_button.addEventListener("click", ev => {
                     break;
                 case 6:
                     delete game_state.other_players[msg.dc_id];
+                    break;
+                case 8:
+                    game_state.client_player.grip = msg.cur_grip;
                     break;
                 default:
                     throw("Unknown message kind received");
