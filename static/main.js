@@ -1,26 +1,65 @@
 import * as THREE from 'three';
 
 import { createScene } from './scene.js';
-import { createPlayer } from './player.js';
-import { createCamera } from './camera.js';
-
-// Creating scene. 
-const [scene, renderer] = createScene();
-
-// Camera
-const camera = createCamera();
-
-// Player
-const _ = createPlayer(scene);
+import { Player } from './player.js';
+import { ThirdPersonCamera,createCamera } from './camera.js';
+import { createMap } from './map.js';
 
 
+class WuzGuhStartTheProgram{
+	constructor(){
+
+		// Creating entities 
+		this.createScene();
+		this.player = new Player({scene: this.scene});
+		this.camera = createCamera();
+		this.thirdPersonCamera = new ThirdPersonCamera({camera: this.camera, target: this.player});
+
+		// 
+		createMap(this.scene);
 
 
+		// Making sure that the gameLoop is being called with the correct scope (or something like that). Callback shit.
+		this.renderer.setAnimationLoop(this.gameLoop.bind(this));
+	}
 
-// Game Loop
-function animate() {
-    
-	renderer.render( scene, camera );
+	createScene() {
+		const scene = new THREE.Scene();
+	
+		const canvas = document.getElementById("main_window");
+		const renderer = new THREE.WebGLRenderer({
+			canvas: canvas
+		});
+	
+		renderer.setSize(window.innerWidth, window.innerHeight);
+		 
+		this.scene = scene;
+		this.renderer = renderer;
+	}
+
+
+	gameLoop(){
+		const time = 1;
+
+		// Update 
+		this.player.Update(time);
+		this.thirdPersonCamera.Update(time);
+
+		// console.log(this.camera.rotation)
+
+		// Render
+		this.renderer.render(this.scene, this.camera);
+	}
+
+
 }
 
-renderer.setAnimationLoop( animate );
+// Start of the program
+document.addEventListener("DOMContentLoaded", (e) => {
+	const mmg = new WuzGuhStartTheProgram();
+})
+
+
+
+
+
