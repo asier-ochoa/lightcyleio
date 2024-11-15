@@ -31,14 +31,41 @@ const game_state = {
             return `id: ${this.id} x: ${this.pos.x}, y: ${this.pos.y}`;
         },
         grip: 0,
+        segments: null
     },
-    // Same as client_player but without id, id as key
+    // Same as client_player but without id or grip, id as key
     other_players: {},
     // Used to get delta_time
-    last_timestamp: 0
+    last_timestamp: 0,
+    // Indicates the server's current simulation tick
+    simulation_tick: 0
 }
 window.game_state = game_state;
 
+const spawn_player = (player_id) => {
+    game_state.other_players[player_id] = {
+        pos: {x: 0, y: 0},
+        alive: true,
+        segments: null
+    }
+}
+
+/**
+ * @param {{x: number, y: number}} start
+ * @param {{x: number: y: number}[]} points
+ * @param {CanvasRenderingContext2D} canvas
+ * @param {string} color
+ */
+const draw_trail = (start, points, canvas, color) => {
+    canvas.beginPath();
+    canvas.moveTo(start.x, start.y);
+    points.forEach(p => {
+        canvas.lineTo(p.x, p.y);
+    });
+    canvas.lineWidth = 4;
+    canvas.strokeStyle = color;
+    canvas.stroke();
+}
 
 // Find all children of debug info and adds them to an object
 // with the key as the value itself and a function to update it with a string parameter
@@ -81,17 +108,35 @@ connection_button.addEventListener("click", ev => {
                     game_state.client_player.alive = true;
                     break;
                 case 4:
-                    if (msg.player_id === game_state.client_player.id) {
-                        game_state.client_player.pos = {x: msg.pos_x, y: 600 - msg.pos_y};
-                    } else {
-                        game_state.other_players[msg.player_id] = {pos: {x: msg.pos_x, y: 600 - msg.pos_y}};
-                    }
+                    msg.pos.forEach(p => {
+                        if (p.id === game_state.client_player.id) {
+                            game_state.client_player.pos = {x: p.x, y: 600 - p.y}
+                        } else {
+                            if (game_state.other_players[p.id] === undefined) {
+                                spawn_player(p.id);
+                            }
+                            game_state.other_players[p.id].pos  = {x: p.x, y: 600 - p.y}
+                        }
+                    });
                     break;
                 case 6:
                     delete game_state.other_players[msg.dc_id];
                     break;
+                case 7:
+                    Object.entries(msg.segments).forEach(([str_id, s]) => {
+                        const id = Number(str_id);
+                        if (id === game_state.client_player.id) {
+                            game_state.client_player.segments = s.map((p) => {return {x: p.x, y: 600 - p.y};});
+                        } else {
+                            game_state.other_players[id].segments = s.map((p) => {return {x: p.x, y: 600 - p.y};});
+                        }
+                    })
+                    break;
                 case 8:
                     game_state.client_player.grip = msg.cur_grip;
+                    break;
+                case 9:
+                    game_state.simulation_tick = msg.tick;
                     break;
                 default:
                     throw("Unknown message kind received");
@@ -172,6 +217,9 @@ const main_loop = ((t) => {
                 bbox.width,
                 bbox.height
             );
+            if (game_state.client_player.segments !== null) {
+                draw_trail(game_state.client_player.pos, game_state.client_player.segments, context, "red");
+            }
         }
 
         // Draw other players
@@ -184,6 +232,9 @@ const main_loop = ((t) => {
                 bbox.width,
                 bbox.height
             );
+            if (p.segments !== null) {
+                draw_trail(p.pos, p.segments, context, "green");
+            }
             context.fillStyle = "black";
             context.fillText(id, p.pos.x, p.pos.y);
         })

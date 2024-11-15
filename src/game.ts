@@ -1,4 +1,5 @@
-import { DirectionRequestMessage, MessageKind, NewPlayerIdMessage, PlayerDisconnectMessage, PlayerGripMessage, PlayerPositionMessage, SpawnMessage, SpawnResponseMessage, type Message } from './ws';
+import { stdout } from 'bun';
+import { DirectionRequestMessage, MessageKind, NewPlayerIdMessage, PlayerDisconnectMessage, PlayerGripMessage, PlayerPositionMessage, PlayerTrailMessage, SpawnMessage, SpawnResponseMessage, TickMessage, type Message } from './ws';
 
 declare var self: Worker;
 
@@ -42,8 +43,6 @@ type Player = {
 type Trail = {
     owner_id: number,
     start_tick: number,
-    // End tick is null when this is the first segment
-    end_tick: number | null,
     end_pos: {x: number, y: number},
     next_segment: Trail | null,
 }
@@ -89,6 +88,8 @@ const spawn_player = (state: GameState, id: number) => {
         };
         player.grip = game_props.max_grip;
         player.direction = Direction.up;
+        // Add a starting trail to player
+        make_new_trail_segment(state, id);
         console.log(`Player with id ${id} spawned at pos x: ${player.pos.x} y: ${player.pos.y}`);
         return true;
     }
@@ -114,21 +115,63 @@ const remove_player = (state: GameState, id: number) => {
     console.log(`Player with id ${id} disconnected`);
 }
 
+// Adds a new segment to trail
+// Should only be done when player switches direction
+// Should only be called on alive players
+const make_new_trail_segment = (state: GameState, p_id: number) => {
+    const player = state.players[p_id];
+    // Case when player has no trail
+    if (player.trail === null) {
+        player.trail = {start_tick: state.current_tick, end_pos: structuredClone(player.pos), owner_id: p_id, next_segment: null}
+    // Case when already existing trail
+    // Add another segment
+    } else {
+        const new_trail_segment: Trail = {start_tick: state.current_tick, end_pos: structuredClone(player.pos), owner_id: p_id, next_segment: player.trail}
+        player.trail = new_trail_segment;
+    }
+}
+
+// Returns an array with all segments of a trail
+const get_trail_pos_arr = (t: Trail) => {
+    const ret = [t.end_pos];
+    let cur_trail = t.next_segment;
+    while(cur_trail !== null) {
+        ret.push(cur_trail.end_pos);
+        cur_trail = cur_trail.next_segment;
+    }
+    return ret;
+}
+
+const print_trail = (start_pos: {x: number, y: number}, t: Trail) => {
+    const writer = stdout.writer();
+    let cur_trail = t.next_segment;
+    writer.write(`{x: ${start_pos.x}, y: ${start_pos.y}}`);
+    while(cur_trail !== null) {
+        writer.write(` => {x: ${cur_trail.end_pos.x}, y: ${cur_trail.end_pos.y}}`);
+        cur_trail = cur_trail.next_segment;
+    }
+    writer.write("\n");
+    writer.flush();
+}
+
 const game_loop = async () => {
     const time = new Date();
 
     // Gameloop state
     const players_arr = Object.entries(state.players);
     const alive_players_arr = players_arr.filter(([_, p]) => p.alive);
+    const trails_arr = alive_players_arr.map(([_, p]) => p.trail)
     {
         // Update players' requested direction
         alive_players_arr.filter(
             ([_, p]) => p.requested_direction !== null && p.requested_direction !== p.direction
-        ).forEach(([_, p]) => {
+        ).forEach(([p_id, p]) => {
             // Check if player has enough grip and deduct
             if (p.grip - game_props.turn_grip_cost >= 0){
                 p.direction = p.requested_direction!;
                 p.grip -= game_props.turn_grip_cost;
+                // Add a new trail segment if player turned
+                make_new_trail_segment(state, Number(p_id));
             }
             p.requested_direction = null;
         })
@@ -158,17 +201,29 @@ const game_loop = async () => {
     // Networking update
     {
         // Broadcast every alive player position to every connected player
-        players_arr.forEach(([bid, _]) => {
-            alive_players_arr.forEach(([id, p]) => {
-                postMessage(new PlayerPositionMessage(Number(bid), Number(id), p.pos.x, p.pos.y))
-            });
+        const formatted_positions = alive_players_arr.map(([id, p]) => {return {id: Number(id), x: p.pos.x, y: p.pos.y};});
+        players_arr.forEach(_ => {
+            postMessage(new PlayerPositionMessage(formatted_positions));
         });
 
+        // Broadcast trail positions to every player
+        let formatted_trails = {};
+        for (const t of trails_arr.filter(t => t !== null)) {
+            formatted_trails = {...formatted_trails, [t.owner_id]: get_trail_pos_arr(t)}
+        }
+        players_arr.forEach(([id, _]) => {
+            postMessage(new PlayerTrailMessage(formatted_trails))
+        })
+
         // Broadcast their grip to every player
-        alive_players_arr.forEach(([id, p]) => {
+        alive_players_arr.forEach(([id, _]) => {
             const player_id = Number(id);
             postMessage(new PlayerGripMessage(player_id, state.players[player_id].grip, game_props.grip_base_regen));
         });
+
+        // Broadcast current tick to every player
+        // This message kind is interpreted as a broadcast, no need to carry a broadcast ID
+        postMessage(new TickMessage(state.current_tick))
     }
 
     state.current_tick += 1;
@@ -200,7 +255,6 @@ self.onmessage = ev => {
         }
         case MessageKind.direction_request: {
             const msg = outer_message as DirectionRequestMessage;
-            console.log(`Player ID ${msg.player_id} requested dir change at tick ${state.current_tick}`)
             set_player_direction(state, msg.player_id, msg.direction);
             break;
         }

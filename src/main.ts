@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import Api from "./api.ts";
-import {connections, DirectionRequestMessage, NewPlayerIdMessage, PlayerDisconnectMessage, PlayerGripMessage, PlayerPositionMessage, SpawnMessage, SpawnResponseMessage } from "./ws.ts";
+import {connections, DirectionRequestMessage, NewPlayerIdMessage, PlayerDisconnectMessage, PlayerGripMessage, PlayerPositionMessage, PlayerTrailMessage, SpawnMessage, SpawnResponseMessage, TickMessage } from "./ws.ts";
 import {MessageKind, NewPlayerMessage, type Message} from "./ws.ts";
 import type { ServerWebSocket } from "bun";
 import * as s from "./serial.js";
@@ -69,11 +69,15 @@ Bun.serve({
                     const conn = connections[msg.player_id];
                     conn.send(s.serialize(msg), true);
                 }
-                // Send a player position
+                // Broadcast all player positions
                 if (outer_msg.kind === MessageKind.player_position) {
                     const msg = outer_msg as PlayerPositionMessage;
-                    const conn = connections[msg.broadcast_id];
-                    conn.send(s.serialize(msg), true);
+                    Object.values(connections).forEach(conn => conn.send(s.serialize(msg), true));
+                }
+                // Broadcast all trails
+                if (outer_msg.kind === MessageKind.player_trail) {
+                    const msg = outer_msg as PlayerTrailMessage;
+                    Object.values(connections).forEach(conn => conn.send(s.serialize(msg), true));
                 }
                 // Notify of a disconnected player
                 if (outer_msg.kind === MessageKind.player_disconnect) {
@@ -86,6 +90,11 @@ Bun.serve({
                     const msg = outer_msg as PlayerGripMessage;
                     const conn = connections[msg.id];
                     conn.send(s.serialize(msg), true);
+                }
+                // Broadcast current tick to all clients
+                if (outer_msg.kind === MessageKind.tick) {
+                    const msg = outer_msg as TickMessage;
+                    Object.values(connections).forEach(conn => conn.send(s.serialize(msg), true));
                 }
             }
         },
