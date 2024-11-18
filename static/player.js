@@ -41,11 +41,11 @@ export class Player {
 
     Update(time) {
         // Bounding the cube to a grid of size 10 - for now
-        if (this.player.position.x > 10 || this.player.position.z > 10 || this.player.position.z < -10 || this.player.position.x < -10) {
-            this.player.position.x = 0;
-            this.player.position.z = 0;
-            return;
-        }
+        // if (this.player.position.x > 10 || this.player.position.z > 10 || this.player.position.z < -10 || this.player.position.x < -10) {
+        //     this.player.position.x = 0;
+        //     this.player.position.z = 0;
+        //     return;
+        // }
 
         // We only need to go "forward"
         this.player.translateX(0.05);

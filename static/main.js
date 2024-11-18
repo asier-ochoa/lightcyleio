@@ -37,13 +37,14 @@ class WuzGuhStartTheProgram{
 		this.renderer = renderer;
 	}
 
+	clock = new THREE.Clock();
 
 	gameLoop(){
-		const time = 1;
-
+		const deltaTime = this.clock.getDelta()
+		console.log(deltaTime);
 		// Update 
-		this.player.Update(time);
-		this.thirdPersonCamera.Update(time);
+		this.player.Update(deltaTime);
+		this.thirdPersonCamera.Update(deltaTime);
 
 		// console.log(this.camera.rotation)
 
