@@ -7,9 +7,9 @@ import { createMap } from './map.js';
 
 export class PlayState extends State {
 
-	constructor(game) {
+	constructor(game, color) {
 		super(game)
-		this.setup()
+		this.setup(color)
 	}
 
 
@@ -23,11 +23,11 @@ export class PlayState extends State {
 		this.game.renderer.render(this.game.scene, this.camera);
 	}
 
-	setup() {
+	setup(color) {
 
 
 		// Creating entities 
-		this.player = new Player({ scene: this.game.scene });
+		this.player = new Player({ scene: this.game.scene, color: color });
 		this.camera = createCamera();
 		this.thirdPersonCamera = new ThirdPersonCamera({ camera: this.camera, target: this.player , renderer: this.game.renderer});
 

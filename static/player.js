@@ -21,6 +21,19 @@ export class Player {
             (gltf) => {
                 const cycle = gltf.scene;
 
+
+                cycle.traverse((child) => {
+                    if (child.isMesh) {
+                      // Assuming the blue parts have a specific material
+                      if (child.name === 'Object_10') {
+                            child.material.emissive.set(new THREE.Color(params.color))
+
+
+                      }
+                    }
+                  });
+
+
                 cycle.scale.set(0.3, 0.3, 0.3);
                 cycle.rotateY(Math.PI/2)
                 this.player.add(cycle);

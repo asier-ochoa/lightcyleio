@@ -133,7 +133,7 @@
 		{
 			"mimeType":"image/png",
 			"name":"Material_baseColor.png",
-			"uri":"../../../Downloads/tron_light_cycle/textures/Material_baseColor.png"
+			"uri":"/home/mario/projects/lightcyleio/static/cycleedit/textures/Material_baseColor.png"
 		}
 	],
 	"accessors":[

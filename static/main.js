@@ -10,13 +10,13 @@ class Game {
 	}
 
 
-	setup(){
+	setup(color){
 		this.createScene();
 
 		// Was thinkin of using a stack for different screens, but nah
 		this.gameStateStack = [];
 
-		this.playState = new PlayState(this);
+		this.playState = new PlayState(this, color);
 
 
 		this.gameStateStack.push(this.playState);
@@ -62,11 +62,15 @@ class Game {
 // })
 
 
+
+
 function startGame(){
+	const selectedRadioButton = document.querySelector('input[name="color"]:checked');
 	var mmg = new Game();
-	document.getElementById("menu").remove();
-	mmg.setup()
+	document.getElementById("remove").remove();
+	mmg.setup(selectedRadioButton.value)
 }
+
 
 
 
