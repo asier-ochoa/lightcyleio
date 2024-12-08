@@ -1,66 +1,73 @@
 import * as THREE from 'three';
 
-import { createScene } from './scene.js';
-import { Player } from './player.js';
-import { ThirdPersonCamera,createCamera } from './camera.js';
-import { createMap } from './map.js';
+import { MainMenuState } from './mainmenustate.js';
+import { PlayState } from './playstate.js';
 
 
-class WuzGuhStartTheProgram{
-	constructor(){
+class Game {
+	constructor() {
+		
+	}
 
-		// Creating entities 
+
+	setup(){
 		this.createScene();
-		this.player = new Player({scene: this.scene});
-		this.camera = createCamera();
-		this.thirdPersonCamera = new ThirdPersonCamera({camera: this.camera, target: this.player});
 
-		// 
-		createMap(this.scene);
+		// Was thinkin of using a stack for different screens, but nah
+		this.gameStateStack = [];
 
+		this.playState = new PlayState(this);
+
+
+		this.gameStateStack.push(this.playState);
 
 		// Making sure that the gameLoop is being called with the correct scope (or something like that). Callback shit.
 		this.renderer.setAnimationLoop(this.gameLoop.bind(this));
 	}
 
+
+	
+
 	createScene() {
 		const scene = new THREE.Scene();
-	
+
 		const canvas = document.getElementById("main_window");
 		const renderer = new THREE.WebGLRenderer({
 			canvas: canvas
 		});
-	
+
 		renderer.setSize(window.innerWidth, window.innerHeight);
-		 
+		
 		this.scene = scene;
 		this.renderer = renderer;
 	}
 
 	clock = new THREE.Clock();
 
-	gameLoop(){
+	gameLoop() {
 		const deltaTime = this.clock.getDelta()
-		console.log(deltaTime);
-		// Update 
-		this.player.Update(deltaTime);
-		this.thirdPersonCamera.Update(deltaTime);
 
-		// console.log(this.camera.rotation)
-
-		// Render
-		this.renderer.render(this.scene, this.camera);
+		if (this.gameStateStack.length > 0) {
+			const currentState = this.gameStateStack[this.gameStateStack.length - 1];
+			currentState.Update(deltaTime);
+			currentState.Render();
+		}
 	}
-
 
 }
 
-// Start of the program
-document.addEventListener("DOMContentLoaded", (e) => {
-	const mmg = new WuzGuhStartTheProgram();
-})
+// // Start of the program
+// document.addEventListener("DOMContentLoaded", (e) => {
+// 	const mmg = new Game();
+// })
+
+
+function startGame(){
+	var mmg = new Game();
+	document.getElementById("menu").remove();
+	mmg.setup()
+}
 
 
 
-
-
+document.getElementById("StartButton").onclick =  startGame

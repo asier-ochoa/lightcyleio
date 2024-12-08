@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset='utf-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
@@ -15,19 +16,86 @@
         }
     </script>
     <script type="module" src='main.js'></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #333;
+            /* Dark background like Slither.io */
+            font-family: Arial, sans-serif;
+        }
+
+        #menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 10;
+        }
+
+        h1 {
+            color: #fff;
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #00ff00;
+            /* Green glow effect */
+        }
+
+        #name-input {
+            padding: 10px;
+            font-size: 1.2em;
+            border: 2px solid #00ff00;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+        }
+
+        button {
+            background-color: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1.2em;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: transform 0.1s ease;
+            /* Add a subtle hover effect */
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+    </style>
+
+
 </head>
+
 <body>
+  
+    <div id="menu">
+        <h1>Lightycycle.io</h1>
+        <input type="text" id="name-input" placeholder="Join game" />
+        <button id="StartButton">Start Game</button>
+    </div>
+
     <canvas id='main_window'>
     </canvas>
 </body>
 <style>
-    body{
+    body {
         margin: 0;
     }
-    
+
     canvas {
-        display: block; /* fix necessary to remove space at bottom of canvas */
+        display: block;
+        /* fix necessary to remove space at bottom of canvas */
     }
-  
 </style>
+
 </html>
