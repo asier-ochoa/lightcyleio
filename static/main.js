@@ -111,15 +111,17 @@ connection_button.addEventListener("click", ev => {
                     break;
                 case 4:
                     msg.pos.forEach(p => {
-                        if (p.id === game_state.client_player.id) {
-                            game_state.client_player.pos = {x: p.x, y: 600 - p.y}
-                            game_state.client_player.color = p.c
-                        } else {
-                            if (game_state.other_players[p.id] === undefined) {
-                                spawn_player(p.id);
+                        if (p !== null) {
+                            if (p.id === game_state.client_player.id) {
+                                game_state.client_player.pos = {x: p.x, y: 600 - p.y}
+                                game_state.client_player.color = p.c
+                            } else {
+                                if (game_state.other_players[p.id] === undefined) {
+                                    spawn_player(p.id);
+                                }
+                                game_state.other_players[p.id].pos = {x: p.x, y: 600 - p.y}
+                                game_state.other_players[p.id].color = p.c
                             }
-                            game_state.other_players[p.id].pos = {x: p.x, y: 600 - p.y}
-                            game_state.other_players[p.id].color = p.c
                         }
                     });
                     break;
@@ -141,6 +143,16 @@ connection_button.addEventListener("click", ev => {
                     break;
                 case 9:
                     game_state.simulation_tick = msg.tick;
+                    break;
+                case 10:
+                    if (msg.player_id === game_state.client_player.id) {
+                        game_state.client_player.segments = null;
+                        game_state.client_player.alive = false;
+                    } else {
+                        console.log("Player is dead", msg.player_id)
+                        game_state.other_players[msg.player_id].segments = null;
+                        game_state.other_players[msg.player_id].alive = false;
+                    }
                     break;
                 default:
                     throw("Unknown message kind received");
@@ -229,19 +241,21 @@ const main_loop = ((t) => {
 
         // Draw other players
         Object.entries(game_state.other_players).forEach(([id, p]) => {
-            const bbox = game_params.player_bbox;
-            context.fillStyle = "green";
-            context.fillRect(
-                p.pos.x - bbox.width / 2,
-                p.pos.y - bbox.height / 2,
-                bbox.width,
-                bbox.height
-            );
-            if (p.segments !== null) {
-                draw_trail(p.pos, p.segments, context, "green");
+            if (p.alive) {
+                const bbox = game_params.player_bbox;
+                context.fillStyle = "green";
+                context.fillRect(
+                    p.pos.x - bbox.width / 2,
+                    p.pos.y - bbox.height / 2,
+                    bbox.width,
+                    bbox.height
+                );
+                if (p.segments !== null) {
+                    draw_trail(p.pos, p.segments, context, "green");
+                }
+                context.fillStyle = "black";
+                context.fillText(id, p.pos.x, p.pos.y);
             }
-            context.fillStyle = "black";
-            context.fillText(id, p.pos.x, p.pos.y);
         })
     }
 
