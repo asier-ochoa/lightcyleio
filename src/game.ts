@@ -51,7 +51,8 @@ type Player = {
     color: Color | null,
     // Trail is null when player is dead
     trail: Trail | null,
-    trail_tail: [Trail, Trail | null] | null
+    trail_tail: [Trail, Trail | null] | null,
+    name: string
 };
 
 type Trail = {
@@ -85,7 +86,8 @@ const create_player = (state: GameState) => {
         score: 0,
         color: null,
         trail: null,
-        trail_tail: null
+        trail_tail: null,
+        name: ""
     };
     state.player_count += 1;
     console.log(`New player with id ${new_id} created`);
@@ -93,7 +95,7 @@ const create_player = (state: GameState) => {
 }
 
 // Returns if spawning the player was succesful
-const spawn_player = (state: GameState, id: number, color: Color) => {
+const spawn_player = (state: GameState, id: number, color: Color, name: string) => {
     const player = state.players[id];
     if (player === undefined || player.alive === true) {
         return false;
@@ -106,6 +108,7 @@ const spawn_player = (state: GameState, id: number, color: Color) => {
         player.color = color;
         player.grip = game_props.max_grip;
         player.direction = Direction.right;
+        player.name = name.substring(0, 20);
         // Add a starting trail to player
         make_new_trail_segment(state, id);
         console.log(`Player with id ${id} spawned at pos x: ${player.pos.x} y: ${player.pos.y}`);
@@ -290,7 +293,7 @@ const player_death = (state: GameState, p_id: number, killer_id: number) => {
     state.players[p_id].alive = false;
     state.players[p_id].trail = null;
     state.players[p_id].trail_tail = null;
-    console.log(`Player ${p_id} was killed by`, killer_id === -1 ? "the arena" : (killer_id === p_id ? "himself" : `player ${killer_id}`));
+    console.log(`Player ${p_id}(${state.players[p_id].name}) was killed by`, killer_id === -1 ? "the arena" : (killer_id === p_id ? "himself" : `player ${killer_id}(${state.players[killer_id].name})`));
 };
 
 type point = {x: number, y: number};
@@ -425,7 +428,14 @@ const game_loop = async () => {
     // Networking update
     {
         // Broadcast every alive player position to every connected player
-        const formatted_positions = alive_players_arr.map(([id, p]) => {return {id: Number(id), x: p.pos.x, y: p.pos.y, dir: p.direction, c:p.color!};});
+        const formatted_positions = alive_players_arr.map(([id, p]) => {return {
+            id: Number(id),
+            x: p.pos.x,
+            y: p.pos.y,
+            dir: p.direction,
+            c: p.color!,
+            n: p.name
+        };});
         players_arr.forEach(_ => {
             postMessage(new PlayerPositionMessage(formatted_positions));
         });
@@ -473,7 +483,7 @@ self.onmessage = ev => {
             break;
         case MessageKind.spawn: {
             const msg = outer_message as SpawnMessage;
-            const success = spawn_player(state, msg.player_id, msg.color);
+            const success = spawn_player(state, msg.player_id, msg.color, msg.name);
             postMessage(new SpawnResponseMessage(success, msg.player_id));
             break;
         }

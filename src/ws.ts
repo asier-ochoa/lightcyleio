@@ -34,7 +34,8 @@ export class SpawnMessage implements Message {
     kind = MessageKind.spawn
     constructor (
         public player_id: number,
-        public color: Color
+        public color: Color,
+        public name: string
     ) {}
 }
 
@@ -51,7 +52,7 @@ export class SpawnResponseMessage implements Message {
 export class PlayerPositionMessage implements Message {
     kind = MessageKind.player_position
     constructor (
-        public pos: {id: number, x: number, y: number, dir: Direction, c: Color}[]
+        public pos: {id: number, x: number, y: number, dir: Direction, c: Color, n: string}[]
     ) {}
 }
 
