@@ -14,8 +14,9 @@ const Direction = Object.freeze({
 export class Player {
     constructor(params) {
         this.params = params;
-        
+
         this.player = new THREE.Group();
+
 
         const loader = new GLTFLoader();
         loader.load(
@@ -51,31 +52,35 @@ export class Player {
         this.connection = null;
         this.setUpInput()
 
-        this.dir = 0
+        this.dir = 3
 
 
         this.trailGeometry = new THREE.BufferGeometry();
-        this.trailMaterial = new THREE.MeshBasicMaterial({ color: params.color, side: THREE.DoubleSide }); 
-        this.trail = new THREE.Mesh(this.trailGeometry, this.trailMaterial); 
-    
+        this.trailMaterial = new THREE.MeshBasicMaterial({ color: params.color, side: THREE.DoubleSide });
+        this.trail = new THREE.Mesh(this.trailGeometry, this.trailMaterial);
+
         params.scene.add(this.trail);
-    
-        this.trailPositions = []; 
-        this.maxTrailLength = 1000; 
-        this.trailHeight = 5; 
+
+        this.trailPositions = [];
+        this.maxTrailLength = 1000;
+        this.trailHeight = 5;
         this.trailWidth = 0.1;
 
 
         params.scene.add(this.player);
+
+        // this.player.rotateY(Math.Pi / 2)
+
     }
 
 
-    updatePosition(x, y){
+
+    updatePosition(x, y) {
         this.player.position.x = x
         this.player.position.z = y
 
     }
-   
+
 
 
     setUpInput() {
@@ -95,19 +100,61 @@ export class Player {
             //     default:
             // }
 
-            let msg = {kind: 5, player_id: this.params.game.id};
+            let msg = { kind: 5, player_id: this.params.game.id };
             // dir 0 - U, 1 - D, 2 - L, 3 - R
-            switch(this.dir) {
-                case 0: 
+            switch (this.dir) {
+                case 0:
                     if (e.key == Direction.LEFT) {
                         this.dir = 2
                         msg.direction = 2
-
-                    } else if (e.key == Direction.RIGHT){
+                        this.player.rotateY(-Math.PI / 2, 0)
+                    } else if (e.key == Direction.RIGHT) {
                         this.dir = 3
                         msg.direction = 3
+                        this.player.rotateY(Math.PI / 2, 0)
                     }
                     break;
+                case 1:
+                    if (e.key == Direction.LEFT) {
+                        this.dir = 0
+                        msg.direction = 0
+                        this.player.rotateY(-Math.PI / 2, 0)
+
+                    } else if (e.key == Direction.RIGHT) {
+                        this.dir = 1
+                        msg.direction = 1
+                        this.player.rotateY(Math.PI / 2, 0)
+
+                    }
+                    break;
+                case 2:
+                    if (e.key == Direction.LEFT) {
+                        this.dir = 1
+                        msg.direction = 1
+                        this.player.rotateY(Math.PI / 2, 0)
+
+                    } else if (e.key == Direction.RIGHT) {
+                        this.dir = 0
+                        msg.direction = 0
+                        this.player.rotateY(Math.PI / 2, 0)
+
+                    }
+                    break;
+
+                case 3:
+                    if (e.key == Direction.LEFT) {
+                        this.dir = 0
+                        msg.direction = 0
+                        this.player.rotateY(-Math.PI / 2, 0)
+
+                    } else if (e.key == Direction.RIGHT) {
+                        this.dir = 1
+                        msg.direction = 1
+                        this.player.rotateY(Math.PI / 2, 0)
+
+                    }
+                    break;
+
 
 
             }
@@ -115,7 +162,7 @@ export class Player {
             console.log(msg)
 
             if (msg.direction !== undefined) {
-                console.log("AA")
+                console.log(msg)
 
                 this.params.game.connection.send(serialize(msg));
             }
@@ -136,29 +183,29 @@ export class Player {
 
 
         const currentPosition = this.player.position.clone();
-        currentPosition.y += this.trailHeight/2;
+        currentPosition.y += this.trailHeight / 2;
         // currentPosition.z += 0.4
 
         this.trailPositions.push(currentPosition);
-    
+
         if (this.trailPositions.length > this.maxTrailLength) {
-          this.trailPositions.shift();
+            this.trailPositions.shift();
         }
-    
-    
+
+
         const geometry = new THREE.PlaneGeometry(this.trailWidth, this.trailHeight, 1, this.trailPositions.length - 1);
         const positionAttribute = geometry.getAttribute('position');
-    
+
         let index = 0;
         for (let i = 0; i < this.trailPositions.length; i++) {
-          const pos = this.trailPositions[i];
-          positionAttribute.setXYZ(index++, pos.x, pos.y, pos.z);
-          positionAttribute.setXYZ(index++, pos.x, pos.y - this.trailHeight/2, pos.z);
+            const pos = this.trailPositions[i];
+            positionAttribute.setXYZ(index++, pos.x, pos.y, pos.z);
+            positionAttribute.setXYZ(index++, pos.x, pos.y - this.trailHeight / 2, pos.z);
         }
-    
-        geometry.computeVertexNormals(); 
-        this.trail.geometry.dispose(); 
-        this.trail.geometry = geometry; 
+
+        geometry.computeVertexNormals();
+        this.trail.geometry.dispose();
+        this.trail.geometry = geometry;
 
     }
 

@@ -7,9 +7,8 @@ import { createMap } from './map.js';
 
 export class PlayState extends State {
 
-	constructor(game, color) {
+	constructor(game ) {
 		super(game)
-		this.setup(color)
 	}
 
 

@@ -9,34 +9,37 @@ import { serialize, deserialize } from './bundle/serial.js';
 
 class Game {
 	constructor() {
-		
+
 	}
 
 
-	setup(){
+	setup() {
 
-		// Was thinkin of using a stack for different screens, but nah
+		this.createScene();
 
 		this.connection = null
 		this.id = null
 		this.alive = true
+		this.color = null
 
-	
-
-	}
-
-
-	startGame(color){
-		this.createScene();
 		this.gameStateStack = [];
 
-		this.playState = new PlayState(this, color);
+		this.playState = new PlayState(this);
 
 
 		this.gameStateStack.push(this.playState);
 
+	}
+
+
+	startGame(color) {
+
+
+		this.playState.setup(color)
+
 		// Making sure that the gameLoop is being called with the correct scope (or something like that). Callback shit.
 		this.renderer.setAnimationLoop(this.gameLoop.bind(this));
+
 	}
 
 
@@ -49,7 +52,7 @@ class Game {
 		});
 
 		renderer.setSize(window.innerWidth, window.innerHeight);
-		
+
 		this.scene = scene;
 		this.renderer = renderer;
 	}
@@ -70,14 +73,13 @@ class Game {
 
 const mmg = new Game();
 
-function startGame(){
-	if(mmg.connection !== null){
+function startGame() {
+	if (mmg.connection !== null) {
 		mmg.connection.send(serialize({
 			player_id: mmg.id,
-			kind:2
+			kind: 2
 		}))
 	}
-
 
 	const selectedRadioButton = document.querySelector('input[name="color"]:checked');
 	document.getElementById("remove").remove();
@@ -89,10 +91,10 @@ document.getElementById("StartButton").onclick = startGame
 
 // Start of the program
 document.addEventListener("DOMContentLoaded", (e) => {
-	
+
 	mmg.setup()
 
-	if(mmg.connection === null){
+	if (mmg.connection === null) {
 		console.log("Attempting connection!");
 		mmg.connection = new WebSocket("/api/connect");
 		mmg.connection.addEventListener("open", e => {
@@ -100,8 +102,8 @@ document.addEventListener("DOMContentLoaded", (e) => {
 		})
 
 
-		
-	
+
+
 		mmg.connection.addEventListener("message", e => {
 			const msg = deserialize(e.data);
 			switch (msg.kind) {
@@ -115,16 +117,40 @@ document.addEventListener("DOMContentLoaded", (e) => {
 				case 4:
 					var playingState = mmg.gameStateStack[0]
 
-					if (msg.player_id === mmg.id) {
-						playingState.player.updatePosition(msg.pos_x, msg.pos_y)
-                    } 
+					msg.pos.forEach(element => {
+						if (element.id === mmg.id) {
+							playingState.player.updatePosition(element.x, element.y)
+
+						} else {
+							//TODO
+						}
+
+					});
+
+
 
 					break;
 				case 6:
 
 					break;
+
+
+				case 8:
+
+					break;
+
+				case 7:
+
+					break;
+
+
+				// tick
+				case 9:
+
+					break;
 				default:
-					throw("Unknown message kind received");
+					console.log(msg)
+					throw ("Unknown message kind received");
 			}
 		})
 

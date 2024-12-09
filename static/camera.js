@@ -5,6 +5,7 @@ export class ThirdPersonCamera{
     constructor(params){
         this.params = params;
         this.camera = params.camera;
+        
 
         this.currentPosition = new THREE.Vector3();
         this.currentLookat = new THREE.Vector3();
@@ -30,6 +31,8 @@ export class ThirdPersonCamera{
 
     calculateIdealLookat(){
         const idealLookat = new THREE.Vector3(10, 2, 0); 
+
+
         idealLookat.applyQuaternion(this.params.target.Rotation);
         idealLookat.add(this.params.target.Position);
         return idealLookat;
