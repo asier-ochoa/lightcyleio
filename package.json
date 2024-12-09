@@ -12,9 +12,5 @@
     "start:release": "bun run build_serialization && bun run src/main.ts",
     "build_serialization": "bun run clean && mkdir -p ./static/bundle && cp ./src/serial.js ./static/bundle/serial.js",
     "clean": "rm -rf ./static/bundle"
-  },
-  "type": "module",
-  "dependencies": {
-    "three": "^0.169.0"
   }
 }

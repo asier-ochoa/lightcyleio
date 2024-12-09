@@ -102,8 +102,8 @@ const spawn_player = (state: GameState, id: number, color: Color, name: string) 
     } else {
         player.alive = true;
         player.pos = {
-            x: Math.floor(Math.random() * game_props.arena_bounds.width),
-            y: Math.floor(Math.random() * game_props.arena_bounds.height)
+            x:0,
+            y: 0
         };
         player.color = color;
         player.grip = game_props.max_grip;
