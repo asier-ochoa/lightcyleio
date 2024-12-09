@@ -4,8 +4,8 @@ declare var self: Worker;
 
 const game_props = {
     // Given in seconds
-    simulation_tick_time: 1/10,
-    base_player_speed: 50,
+    simulation_tick_time: 1/60,
+    base_player_speed: 2,
     arena_bounds: {
         width: 800,
         height: 600
@@ -58,8 +58,8 @@ const spawn_player = (state: GameState, id: number) => {
     } else {
         player.alive = true;
         player.pos = {
-            x: Math.floor(Math.random() * game_props.arena_bounds.width),
-            y: Math.floor(Math.random() * game_props.arena_bounds.height)
+            x:0,
+            y: 0
         };
         player.direction = Direction.up;
         console.log(`Player with id ${id} spawned at pos x: ${player.pos.x} y: ${player.pos.y}`);

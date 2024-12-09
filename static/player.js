@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+import { serialize, deserialize } from './bundle/serial.js';
+
 // enum
 const Direction = Object.freeze({
     FORWARD: "w",
@@ -12,7 +14,7 @@ const Direction = Object.freeze({
 export class Player {
     constructor(params) {
         this.params = params;
-
+        
         this.player = new THREE.Group();
 
         const loader = new GLTFLoader();
@@ -46,9 +48,10 @@ export class Player {
         );
 
 
-
+        this.connection = null;
         this.setUpInput()
 
+        this.dir = 0
 
 
         this.trailGeometry = new THREE.BufferGeometry();
@@ -61,27 +64,62 @@ export class Player {
         this.maxTrailLength = 1000; 
         this.trailHeight = 5; 
         this.trailWidth = 0.1;
-        
 
 
         params.scene.add(this.player);
     }
 
+
+    updatePosition(x, y){
+        this.player.position.x = x
+        this.player.position.z = y
+
+    }
+   
+
+
     setUpInput() {
+
         window.addEventListener("keypress", (e) => {
-            // So we only really need to handle two inputs, going right and left. 
-            // We rotate 60deg each time the keys are pressed, no need to know the orientation of the player or anything else.
-            switch (e.key) {
-                case Direction.LEFT:
-                    this.player.rotateY(Math.PI / 2, 0);
-                    this.currentDirection = Direction.LEFT;
+            // // So we only really need to handle two inputs, going right and left. 
+            // // We rotate 60deg each time the keys are pressed, no need to know the orientation of the player or anything else.
+            // switch (e.key) {
+            //     case Direction.LEFT:
+            //         this.player.rotateY(Math.PI / 2, 0);
+            //         this.currentDirection = Direction.LEFT;
+            //         break;
+            //     case Direction.RIGHT:
+            //         this.player.rotateY(-Math.PI / 2, 0);
+            //         this.currentDirection = Direction.RIGHT;
+            //         break;
+            //     default:
+            // }
+
+            let msg = {kind: 5, player_id: this.params.game.id};
+            // dir 0 - U, 1 - D, 2 - L, 3 - R
+            switch(this.dir) {
+                case 0: 
+                    if (e.key == Direction.LEFT) {
+                        this.dir = 2
+                        msg.direction = 2
+
+                    } else if (e.key == Direction.RIGHT){
+                        this.dir = 3
+                        msg.direction = 3
+                    }
                     break;
-                case Direction.RIGHT:
-                    this.player.rotateY(-Math.PI / 2, 0);
-                    this.currentDirection = Direction.RIGHT;
-                    break;
-                default:
+
+
             }
+
+            console.log(msg)
+
+            if (msg.direction !== undefined) {
+                console.log("AA")
+
+                this.params.game.connection.send(serialize(msg));
+            }
+
         })
     }
 
@@ -94,7 +132,7 @@ export class Player {
         // }
 
         // We only need to go "forward"
-        this.player.translateX(0.5);
+        // this.player.translateX(0.5);
 
 
         const currentPosition = this.player.position.clone();
