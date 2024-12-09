@@ -8,7 +8,10 @@ export enum MessageKind {
     spawn_response = 3,
     player_position = 4,
     direction_request = 5,
-    player_disconnect = 6
+    player_disconnect = 6,
+    player_trail = 7,
+    player_grip = 8,
+    tick = 9,
 }
 
 export interface Message {
@@ -42,13 +45,11 @@ export class SpawnResponseMessage implements Message {
     ) {}
 }
 
+// Message interpreted as a broadcast
 export class PlayerPositionMessage implements Message {
     kind = MessageKind.player_position
     constructor (
-        public broadcast_id: number,
-        public player_id: number,
-        public pos_x: number,
-        public pos_y: number
+        public pos: {id: number, x: number, y: number, dir: Direction}[]
     ) {}
 }
 
@@ -64,7 +65,38 @@ export class PlayerDisconnectMessage implements Message {
     kind = MessageKind.player_disconnect
     constructor (
         public dc_id: number,
-        public broadcast_id: number | null,
+        public broadcast_id: number | null
+    ) {}
+}
+
+// Interpreted as a broadcast message
+// TODO: The way im sending every trail every tick is TERRIBLE
+// Instead I should keep this message to send to a player that just connected
+// so they can sync the state then have another message just to update a given player's trail
+export class PlayerTrailMessage implements Message {
+    kind = MessageKind.player_trail
+    constructor (
+        public segments: {
+            [id: number]: {x: number, y: number, tick: number}[]
+        },
+    ) {}
+}
+
+export class PlayerGripMessage implements Message {
+    kind = MessageKind.player_grip
+    constructor (
+        public id: number,
+        public cur_grip: number,
+        public regen_rate: number
+    ) {}
+}
+
+// Used to transmit the current tick of the simulation to every player
+// Message interpreted as a broadcast
+export class TickMessage implements Message {
+    kind = MessageKind.tick
+    constructor (
+        public tick: number
     ) {}
 }
 
