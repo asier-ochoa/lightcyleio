@@ -12,6 +12,7 @@ export enum MessageKind {
     player_trail = 7,
     player_grip = 8,
     tick = 9,
+    death = 10,
 }
 
 export interface Message {
@@ -98,6 +99,17 @@ export class TickMessage implements Message {
     kind = MessageKind.tick
     constructor (
         public tick: number
+    ) {}
+}
+
+// Used to transmit any despawn and who caused it
+// Broadcast to every player
+export class DeathMessage implements Message {
+    kind = MessageKind.death
+    constructor (
+        public player_id: number,
+        // -1 If player died due to arena
+        public killer_id: number
     ) {}
 }
 

@@ -1,12 +1,13 @@
 import { stdout } from 'bun';
-import { DirectionRequestMessage, MessageKind, NewPlayerIdMessage, PlayerDisconnectMessage, PlayerGripMessage, PlayerPositionMessage, PlayerTrailMessage, SpawnMessage, SpawnResponseMessage, TickMessage, type Message } from './ws';
+import { DeathMessage, DirectionRequestMessage, MessageKind, NewPlayerIdMessage, PlayerDisconnectMessage, PlayerGripMessage, PlayerPositionMessage, PlayerTrailMessage, SpawnMessage, SpawnResponseMessage, TickMessage, type Message } from './ws';
 
 declare var self: Worker;
 
 export const game_props = {
     // Given in seconds
     simulation_tick_time: 1/20,
-    base_player_speed: 10,
+    base_player_speed: 50,
+    // Frontend can't handle rectangles
     arena_bounds: {
         width: 800,
         height: 600
@@ -273,6 +274,14 @@ const get_trail_pos_arr = (t: Trail) => {
     return ret;
 }
 
+const player_death = (state: GameState, p_id: number, killer_id: number) => {
+    postMessage(new DeathMessage(p_id, killer_id));
+    state.players[p_id].alive = false;
+    state.players[p_id].trail = null;
+    state.players[p_id].trail_tail = null;
+    console.log(`Player ${p_id} was killed by`, killer_id === -1 ? "the arena" : (killer_id === p_id ? "himself" : `player ${killer_id}`));
+}
+
 const print_trail = (start_pos: {x: number, y: number}, t: Trail) => {
     const writer = stdout.writer();
     let cur_trail = t.next_segment;
@@ -307,25 +316,35 @@ const game_loop = async () => {
             p.requested_direction = null;
         });
 
-        // Move players according to their direction and regen their grip
-        alive_players_arr.forEach(([_, p]) => {
+        alive_players_arr.forEach(([id, p], idx) => {
+            // Arena wall collision detection
+            // Must be done before player movement but
+            // after direction change to sweep the
+            // the collision line into the next tick
+            const pos = p.pos;
+            // Store computed next direction
+            const next_pos = (() => {
+                switch (p.direction) {
+                    case Direction.up:
+                        return {x: p.pos.x, y: p.pos.y + game_props.base_player_speed * game_props.simulation_tick_time}
+                    case Direction.down:
+                        return {x: p.pos.x, y: p.pos.y - game_props.base_player_speed * game_props.simulation_tick_time}
+                    case Direction.left:
+                        return {x: p.pos.x - game_props.base_player_speed * game_props.simulation_tick_time, y: p.pos.y}
+                    case Direction.right:
+                        return {x: p.pos.x + game_props.base_player_speed * game_props.simulation_tick_time, y: p.pos.y}
+                }
+            })();
+            if (next_pos.x > game_props.arena_bounds.width || next_pos.x < 0 || next_pos.y > game_props.arena_bounds.height || next_pos.y < 0){
+                player_death(state, Number(id), -1);
+                delete alive_players_arr[idx];
+            }
+
+            // Move players according to their direction and regen their grip
             if (p.grip < game_props.max_grip) {
                 p.grip += game_props.grip_base_regen * game_props.simulation_tick_time;
             }
-            switch (p.direction) {
-                case Direction.up:
-                    p.pos.y += game_props.base_player_speed * game_props.simulation_tick_time;
-                    break;
-                case Direction.down:
-                    p.pos.y -= game_props.base_player_speed * game_props.simulation_tick_time;
-                    break;
-                case Direction.left:
-                    p.pos.x -= game_props.base_player_speed * game_props.simulation_tick_time;
-                    break;
-                case Direction.right:
-                    p.pos.x += game_props.base_player_speed * game_props.simulation_tick_time;
-                    break;
-            }
+            p.pos = next_pos;
         });
 
         // Shrink each alive player's trail

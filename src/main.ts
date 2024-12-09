@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import Api from "./api.ts";
-import {connections, DirectionRequestMessage, NewPlayerIdMessage, PlayerDisconnectMessage, PlayerGripMessage, PlayerPositionMessage, PlayerTrailMessage, SpawnMessage, SpawnResponseMessage, TickMessage } from "./ws.ts";
+import {connections, DeathMessage, DirectionRequestMessage, NewPlayerIdMessage, PlayerDisconnectMessage, PlayerGripMessage, PlayerPositionMessage, PlayerTrailMessage, SpawnMessage, SpawnResponseMessage, TickMessage } from "./ws.ts";
 import {MessageKind, NewPlayerMessage, type Message} from "./ws.ts";
 import type { ServerWebSocket } from "bun";
 import * as s from "./serial.js";
@@ -52,6 +52,9 @@ Bun.serve({
         open(ws: ServerWebSocket) {
             console.log(`Client with address ${ws.remoteAddress} connected`);
             game_worker.postMessage(new NewPlayerMessage())
+            game_worker.onerror = ev => {
+                console.log("Game worker has crashed: ", ev.message)
+            }
             game_worker.onmessage = ev => {
                 // console.log(`Received from game logic worker:`)
                 // console.log(JSON.stringify(ev.data, null, 4))
@@ -100,6 +103,11 @@ Bun.serve({
                 // Broadcast current tick to all clients
                 if (outer_msg.kind === MessageKind.tick) {
                     const msg = outer_msg as TickMessage;
+                    Object.values(connections).forEach(conn => conn.send(s.serialize(msg), true));
+                }
+                // Broadcast player death to all clients
+                if (outer_msg.kind === MessageKind.death) {
+                    const msg = outer_msg as DeathMessage;
                     Object.values(connections).forEach(conn => conn.send(s.serialize(msg), true));
                 }
             }
