@@ -90,7 +90,7 @@ export class Player {
         params.scene.add(this.trail);
 
         this.trailPositions = [];
-        this.maxTrailLength = 1000;
+        this.maxTrailLength = this.params.game.game_params / 2;
         this.trailHeight = 5;
         this.trailWidth = 0.1;
 
@@ -220,10 +220,12 @@ export class Player {
         // We only need to go "forward"
         // this.player.translateX(0.5);
 
-
         const currentPosition = this.player.position.clone();
         currentPosition.y += this.trailHeight / 2;
         // currentPosition.z += 0.4
+
+        console.log(currentPosition)
+
 
         this.trailPositions.push(currentPosition);
 

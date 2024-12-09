@@ -218,11 +218,14 @@ document.addEventListener("DOMContentLoaded", (e) => {
 				case 10:
 					if (msg.player_id === mmg.id) {
 						mmg.gameStateStack[0].player.deletePlayer()
-
+						mmg.alive = false
 
 						document.getElementById("main_window").hidden = true;
 						document.getElementById("remove").style.display = 'block';
 					} else {
+
+						mmg.otherPlayers[msg.player_id].alive = false
+
 						mmg.otherPlayers[msg.player_id].deletePlayer()
 						delete mmg.otherPlayers[msg.player_id]
 					}
@@ -235,9 +238,19 @@ document.addEventListener("DOMContentLoaded", (e) => {
 
 
 					} else {
-						const node = document.createTextNode(`Player ${msg.player_id} was killed by ${msg.killer_id}.`);
-						p.appendChild(node);
 
+
+						if(msg.player_id === msg.killer_id){
+							const node = document.createTextNode(`Player ${msg.player_id} killed himself.`);
+							p.appendChild(node);
+
+
+						} else{
+							const node = document.createTextNode(`Player ${msg.player_id} was killed by ${msg.killer_id}.`);
+							p.appendChild(node);
+	
+						}
+					
 
 					}
 
