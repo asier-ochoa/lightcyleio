@@ -8,11 +8,9 @@
     "typescript": "^5.0.0"
   },
   "scripts": {
-    "start": "DEV_ENV=true bun run --watch src/main.ts",
-    "start:release": "bun run src/main.ts"
-  },
-  "type": "module",
-  "dependencies": {
-    "three": "^0.169.0"
+    "start": "bun run build_serialization && DEV_ENV=true bun run --watch src/main.ts",
+    "start:release": "bun run build_serialization && bun run src/main.ts",
+    "build_serialization": "bun run clean && mkdir -p ./static/bundle && cp ./src/serial.js ./static/bundle/serial.js",
+    "clean": "rm -rf ./static/bundle"
   }
 }
