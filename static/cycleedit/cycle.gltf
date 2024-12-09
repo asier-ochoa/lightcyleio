@@ -3,6 +3,10 @@
 		"generator":"Khronos glTF Blender I/O v4.3.47",
 		"version":"2.0"
 	},
+	"extensionsUsed":[
+		"KHR_materials_specular",
+		"KHR_materials_ior"
+	],
 	"scene":0,
 	"scenes":[
 		{
@@ -17,41 +21,46 @@
 	"nodes":[
 		{
 			"mesh":0,
-			"name":"Object_10",
-			"translation":[
-				1.1439094543457031,
-				0.4593219757080078,
-				-3.131763458251953
-			]
+			"name":"Object_10"
 		},
 		{
 			"mesh":1,
-			"name":"Object_11",
-			"translation":[
-				1.1439094543457031,
-				0.4593219757080078,
-				-3.131763458251953
-			]
+			"name":"Object_11"
 		},
 		{
 			"mesh":2,
-			"name":"Object_12",
-			"translation":[
-				1.1439094543457031,
-				0.4593219757080078,
-				-3.131763458251953
-			]
+			"name":"Object_12"
 		}
 	],
 	"materials":[
 		{
 			"doubleSided":true,
 			"emissiveFactor":[
-				0.04084410145878792,
-				0.48659899830818176,
-				1
+				1,
+				0.0037327460013329983,
+				0
 			],
-			"name":"Material.001"
+			"extensions":{
+				"KHR_materials_specular":{
+					"specularColorFactor":[
+						1.0,
+						0.041117604821920395,
+						0.0022649120073765516
+					]
+				},
+				"KHR_materials_ior":{
+					"ior":1
+				}
+			},
+			"name":"Material.006",
+			"pbrMetallicRoughness":{
+				"baseColorFactor":[
+					1,
+					0.00797189399600029,
+					0,
+					1
+				]
+			}
 		},
 		{
 			"doubleSided":true,
@@ -133,7 +142,7 @@
 		{
 			"mimeType":"image/png",
 			"name":"Material_baseColor.png",
-			"uri":"/home/mario/projects/lightcyleio/static/cycleedit/textures/Material_baseColor.png"
+			"uri":"../../../../Downloads/tron_light_cycle/textures/Material_baseColor.png"
 		}
 	],
 	"accessors":[

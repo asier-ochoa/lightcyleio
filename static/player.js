@@ -24,18 +24,19 @@ export class Player {
 
                 cycle.traverse((child) => {
                     if (child.isMesh) {
-                      // Assuming the blue parts have a specific material
-                      if (child.name === 'Object_10') {
+                        // Assuming the blue parts have a specific material
+                        if (child.name === 'Object_10') {
                             child.material.emissive.set(new THREE.Color(params.color))
 
 
-                      }
+                        }
                     }
-                  });
+                });
 
 
                 cycle.scale.set(0.3, 0.3, 0.3);
-                cycle.rotateY(Math.PI/2)
+                cycle.rotateY(Math.PI / 2)
+                cycle.position.y = .5
                 this.player.add(cycle);
             },
             undefined,
@@ -49,6 +50,18 @@ export class Player {
         this.setUpInput()
 
 
+
+        this.trailGeometry = new THREE.BufferGeometry();
+        this.trailMaterial = new THREE.MeshBasicMaterial({ color: params.color, side: THREE.DoubleSide }); 
+        this.trail = new THREE.Mesh(this.trailGeometry, this.trailMaterial); 
+    
+        params.scene.add(this.trail);
+    
+        this.trailPositions = []; 
+        this.maxTrailLength = 1000; 
+        this.trailHeight = 5; 
+        this.trailWidth = 0.1;
+        
 
 
         params.scene.add(this.player);
@@ -82,6 +95,32 @@ export class Player {
 
         // We only need to go "forward"
         this.player.translateX(0.5);
+
+
+        const currentPosition = this.player.position.clone();
+        currentPosition.y += this.trailHeight/2;
+        // currentPosition.z += 0.4
+
+        this.trailPositions.push(currentPosition);
+    
+        if (this.trailPositions.length > this.maxTrailLength) {
+          this.trailPositions.shift();
+        }
+    
+    
+        const geometry = new THREE.PlaneGeometry(this.trailWidth, this.trailHeight, 1, this.trailPositions.length - 1);
+        const positionAttribute = geometry.getAttribute('position');
+    
+        let index = 0;
+        for (let i = 0; i < this.trailPositions.length; i++) {
+          const pos = this.trailPositions[i];
+          positionAttribute.setXYZ(index++, pos.x, pos.y, pos.z);
+          positionAttribute.setXYZ(index++, pos.x, pos.y - this.trailHeight/2, pos.z);
+        }
+    
+        geometry.computeVertexNormals(); 
+        this.trail.geometry.dispose(); 
+        this.trail.geometry = geometry; 
 
     }
 
