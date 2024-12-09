@@ -18,6 +18,7 @@ class Game {
 
 		this.createScene();
 
+		this.firstTime = true
 		this.connection = null
 		this.id = null
 		this.alive = true
@@ -48,12 +49,27 @@ class Game {
 
 	startGame(color) {
 
-
-		this.playState.setup(color)
 		this.color = color
 
-		// Making sure that the gameLoop is being called with the correct scope (or something like that). Callback shit.
-		this.renderer.setAnimationLoop(this.gameLoop.bind(this));
+		console.log(this.firstTime)
+		if(this.firstTime === true){
+			this.playState.setup(color)
+
+			// Making sure that the gameLoop is being called with the correct scope (or something like that). Callback shit.
+			this.renderer.setAnimationLoop(this.gameLoop.bind(this));
+		} else {
+			
+			mmg.connection.send(serialize({
+				player_id: mmg.id,
+				kind: 2,
+				color: Number(this.color)
+			}))
+
+			document.getElementById("main_window").hidden =false;
+			this.firstTime = false;
+
+		}
+		
 
 	}
 
@@ -100,7 +116,9 @@ function startGame() {
 		}))
 	}
 
-	document.getElementById("remove").remove();
+	document.getElementById("remove").style.display = 'none';
+
+	
 	mmg.startGame(selectedRadioButton.value)
 }
 
@@ -137,19 +155,22 @@ document.addEventListener("DOMContentLoaded", (e) => {
 					var playingState = mmg.gameStateStack[0]
 
 					msg.pos.forEach(element => {
-						if (element.id === mmg.id) {
-							playingState.player.updatePosition(element.x, element.y, element.dir)
-
-						} else {
-							if(element.id in mmg.otherPlayers){
-								mmg.otherPlayers[element.id].updatePosition(element.x, element.y, element.dir)
+						if(element !== null){
+							if (element.id === mmg.id) {
+								playingState.player.updatePosition(element.x, element.y, element.dir)
+	
 							} else {
-								console.log(msg)
-								mmg.otherPlayers[element.id] = new Player({ scene: mmg.scene, color: element.c, game: mmg, client: false })
+								if(element.id in mmg.otherPlayers){
+									mmg.otherPlayers[element.id].updatePosition(element.x, element.y, element.dir)
+								} else {
+									mmg.otherPlayers[element.id] = new Player({ scene: mmg.scene, color: element.c, game: mmg, client: false })
+								}
+								
 							}
-							
-						}
+	
 
+						}
+					
 					});
 					break;
 				case 6:
@@ -157,7 +178,6 @@ document.addEventListener("DOMContentLoaded", (e) => {
 						mmg.otherPlayers[msg.dc_id].deletePlayer()
 						delete mmg.otherPlayers[msg.dc_id]
 					}
-			
 					else
 						console.error("A player that is not in the session disconnected??")
 					break;
@@ -177,6 +197,23 @@ document.addEventListener("DOMContentLoaded", (e) => {
 				case 9:
 
 					break;
+
+				case 10:
+					if(msg.player_id === mmg.id){
+						mmg.gameStateStack[0].player.deletePlayer()
+
+					
+						document.getElementById("main_window").hidden = true;
+						document.getElementById("remove").style.display = 'block';
+					} else {
+						mmg.otherPlayers[msg.player_id].deletePlayer()
+						delete mmg.otherPlayers[msg.player_id]
+					}
+				
+
+
+					break;
+
 				default:
 					throw ("Unknown message kind received");
 			}
