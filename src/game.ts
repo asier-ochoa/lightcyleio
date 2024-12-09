@@ -3,7 +3,7 @@ import { DirectionRequestMessage, MessageKind, NewPlayerIdMessage, PlayerDisconn
 
 declare var self: Worker;
 
-const game_props = {
+export const game_props = {
     // Given in seconds
     simulation_tick_time: 1/20,
     base_player_speed: 50,
@@ -24,6 +24,15 @@ export enum Direction {
     right
 };
 
+export enum Color {
+    Red,
+    Blue,
+    Orange,
+    Cyan,
+    Gold,
+    White
+};
+
 // Game mechanic:
 // - Turning is a resource on a meter. The bar is called grip and goes from 0 to 100.
 //   Each turn takes 20 points from said bar. You gain ${grip_base_regen} points per second at base score.
@@ -37,6 +46,8 @@ type Player = {
     requested_direction: Direction | null,
     grip: number,
     score: number,
+    // If a player is alive, this should have a value
+    color: Color | null,
     // Trail is null when player is dead
     trail: Trail | null,
     trail_tail: [Trail, Trail | null] | null
@@ -66,10 +77,11 @@ const create_player = (state: GameState) => {
     state.players[new_id] = {
         alive: false,
         pos: {x: 0, y: 0},
-        direction: Direction.up,
+        direction: Direction.right,
         requested_direction: null,
         grip: game_props.max_grip,
         score: 0,
+        color: null,
         trail: null,
         trail_tail: null
     };
@@ -79,7 +91,7 @@ const create_player = (state: GameState) => {
 }
 
 // Returns if spawning the player was succesful
-const spawn_player = (state: GameState, id: number) => {
+const spawn_player = (state: GameState, id: number, color: Color) => {
     const player = state.players[id];
     if (player === undefined || player.alive === true) {
         return false;
@@ -89,8 +101,9 @@ const spawn_player = (state: GameState, id: number) => {
             x: Math.floor(Math.random() * game_props.arena_bounds.width),
             y: Math.floor(Math.random() * game_props.arena_bounds.height)
         };
+        player.color = color;
         player.grip = game_props.max_grip;
-        player.direction = Direction.up;
+        player.direction = Direction.right;
         // Add a starting trail to player
         make_new_trail_segment(state, id);
         console.log(`Player with id ${id} spawned at pos x: ${player.pos.x} y: ${player.pos.y}`);
@@ -247,7 +260,7 @@ const game_loop = async () => {
     // Networking update
     {
         // Broadcast every alive player position to every connected player
-        const formatted_positions = alive_players_arr.map(([id, p]) => {return {id: Number(id), x: p.pos.x, y: p.pos.y, dir: p.direction};});
+        const formatted_positions = alive_players_arr.map(([id, p]) => {return {id: Number(id), x: p.pos.x, y: p.pos.y, dir: p.direction, c:p.color!};});
         players_arr.forEach(_ => {
             postMessage(new PlayerPositionMessage(formatted_positions));
         });
@@ -295,7 +308,7 @@ self.onmessage = ev => {
             break;
         case MessageKind.spawn: {
             const msg = outer_message as SpawnMessage;
-            const success = spawn_player(state, msg.player_id);
+            const success = spawn_player(state, msg.player_id, msg.color);
             postMessage(new SpawnResponseMessage(success, msg.player_id));
             break;
         }

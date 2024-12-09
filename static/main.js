@@ -28,10 +28,11 @@ const game_state = {
         },
         alive: false,
         toString() {
-            return `id: ${this.id} x: ${this.pos.x}, y: ${this.pos.y}`;
+            return `id: ${this.id} x: ${this.pos.x}, y: ${this.pos.y}, color: ${this.color}`;
         },
         grip: 0,
-        segments: null
+        segments: null,
+        color: null
     },
     // Same as client_player but without id or grip, id as key
     other_players: {},
@@ -46,7 +47,8 @@ const spawn_player = (player_id) => {
     game_state.other_players[player_id] = {
         pos: {x: 0, y: 0},
         alive: true,
-        segments: null
+        segments: null,
+        color: null
     }
 }
 
@@ -111,11 +113,13 @@ connection_button.addEventListener("click", ev => {
                     msg.pos.forEach(p => {
                         if (p.id === game_state.client_player.id) {
                             game_state.client_player.pos = {x: p.x, y: 600 - p.y}
+                            game_state.client_player.color = p.c
                         } else {
                             if (game_state.other_players[p.id] === undefined) {
                                 spawn_player(p.id);
                             }
-                            game_state.other_players[p.id].pos  = {x: p.x, y: 600 - p.y}
+                            game_state.other_players[p.id].pos = {x: p.x, y: 600 - p.y}
+                            game_state.other_players[p.id].color = p.c
                         }
                     });
                     break;
@@ -159,6 +163,7 @@ spawn_button.addEventListener("click", e => {
     if (game_state.connection !== null) {
         game_state.connection.send(serialize({
             player_id: game_state.client_player.id,
+            color: 1,
             kind: 2
         }));
     }
