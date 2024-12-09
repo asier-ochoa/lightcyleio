@@ -74,14 +74,17 @@ class Game {
 const mmg = new Game();
 
 function startGame() {
+	const selectedRadioButton = document.querySelector('input[name="color"]:checked');
+
+
 	if (mmg.connection !== null) {
 		mmg.connection.send(serialize({
 			player_id: mmg.id,
-			kind: 2
+			kind: 2,
+			color: Number(selectedRadioButton.value)
 		}))
 	}
 
-	const selectedRadioButton = document.querySelector('input[name="color"]:checked');
 	document.getElementById("remove").remove();
 	mmg.startGame(selectedRadioButton.value)
 }
@@ -119,7 +122,9 @@ document.addEventListener("DOMContentLoaded", (e) => {
 
 					msg.pos.forEach(element => {
 						if (element.id === mmg.id) {
-							playingState.player.updatePosition(element.x, element.y)
+							playingState.player.updatePosition(element.x, element.y, element.dir)
+							console.log(element.dir)
+
 
 						} else {
 							//TODO
