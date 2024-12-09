@@ -12,8 +12,9 @@ const game_props = {
         height: 600
     },
     turn_grip_cost: 20,
-    grip_base_regen: 200, // Given in points per second
-    max_grip: 100
+    grip_base_regen: 500, // Given in points per second
+    max_grip: 100,
+    trail_decay_time: 5,// Given in seconds
 }
 
 export enum Direction {
@@ -37,7 +38,8 @@ type Player = {
     grip: number,
     score: number,
     // Trail is null when player is dead
-    trail: Trail | null
+    trail: Trail | null,
+    trail_tail: [Trail, Trail | null] | null
 };
 
 type Trail = {
@@ -65,10 +67,11 @@ const create_player = (state: GameState) => {
         alive: false,
         pos: {x: 0, y: 0},
         direction: Direction.up,
-        requested_direction: null ,
+        requested_direction: null,
         grip: game_props.max_grip,
         score: 0,
-        trail: null
+        trail: null,
+        trail_tail: null
     };
     state.player_count += 1;
     console.log(`New player with id ${new_id} created`);
@@ -105,6 +108,24 @@ const set_player_direction = (state: GameState, id: number, direction: Direction
     }
 }
 
+// Returns true if requested direction is opposite to current
+const is_opposite = (dir: Direction, new_dir: Direction) => {
+    switch (dir) {
+        case Direction.up:
+            return new_dir === Direction.down;
+            break;
+        case Direction.down:
+            return new_dir === Direction.up;
+            break;
+        case Direction.left:
+            return new_dir === Direction.right;
+            break;
+        case Direction.right:
+            return new_dir === Direction.left;
+            break;
+    }
+}
+
 // Removes a player from the simulation
 const remove_player = (state: GameState, id: number) => {
     delete state.players[id];
@@ -122,21 +143,46 @@ const make_new_trail_segment = (state: GameState, p_id: number) => {
     const player = state.players[p_id];
     // Case when player has no trail
     if (player.trail === null) {
-        player.trail = {start_tick: state.current_tick, end_pos: structuredClone(player.pos), owner_id: p_id, next_segment: null}
+        player.trail = {start_tick: state.current_tick, end_pos: structuredClone(player.pos), owner_id: p_id, next_segment: null};
+        player.trail_tail = [player.trail, null];
     // Case when already existing trail
     // Add another segment
     } else {
-        const new_trail_segment: Trail = {start_tick: state.current_tick, end_pos: structuredClone(player.pos), owner_id: p_id, next_segment: player.trail}
+        const new_trail_segment: Trail = {start_tick: state.current_tick, end_pos: structuredClone(player.pos), owner_id: p_id, next_segment: player.trail};
         player.trail = new_trail_segment;
+        player.trail_tail = get_trail_tail(new_trail_segment);
     }
 }
 
+// Returns the last segment of a trail
+// Possible cases are [t, null], [t, t] and [..., t, t], last two have the same return
+const get_trail_tail = (t: Trail): [Trail, Trail | null] => {
+    let cur_trail = t.next_segment;
+    if (cur_trail === null) {
+        return [t, null]
+    }
+    let next_trail = cur_trail.next_segment;
+    while (next_trail !== null) {
+        cur_trail = next_trail;
+        next_trail = next_trail.next_segment;
+    }
+    return [cur_trail, next_trail];
+}
+
+// const shrink_tail = (tail: [Trail, Trail | null]) => {
+//     if (tail[1] === null) {
+//         return;
+//     }
+//     // The distance the trail should shrink
+//     const tick_shrink_dist = (tail[1].start_tick - tail[0].start_tick) / (math);
+// }
+
 // Returns an array with all segments of a trail
 const get_trail_pos_arr = (t: Trail) => {
-    const ret = [t.end_pos];
+    const ret = [{...t.end_pos, tick: t.start_tick}];
     let cur_trail = t.next_segment;
     while(cur_trail !== null) {
-        ret.push(cur_trail.end_pos);
+        ret.push({...cur_trail.end_pos, tick: cur_trail.start_tick});
         cur_trail = cur_trail.next_segment;
     }
     return ret;
@@ -164,7 +210,7 @@ const game_loop = async () => {
     {
         // Update players' requested direction
         alive_players_arr.filter(
-            ([_, p]) => p.requested_direction !== null && p.requested_direction !== p.direction
+            ([_, p]) => p.requested_direction !== null && p.requested_direction !== p.direction && !is_opposite(p.direction, p.requested_direction)
         ).forEach(([p_id, p]) => {
             // Check if player has enough grip and deduct
             if (p.grip - game_props.turn_grip_cost >= 0){
@@ -174,7 +220,7 @@ const game_loop = async () => {
                 make_new_trail_segment(state, Number(p_id));
             }
             p.requested_direction = null;
-        })
+        });
 
         // Move players according to their direction and regen their grip
         alive_players_arr.forEach(([_, p]) => {
@@ -201,7 +247,7 @@ const game_loop = async () => {
     // Networking update
     {
         // Broadcast every alive player position to every connected player
-        const formatted_positions = alive_players_arr.map(([id, p]) => {return {id: Number(id), x: p.pos.x, y: p.pos.y};});
+        const formatted_positions = alive_players_arr.map(([id, p]) => {return {id: Number(id), x: p.pos.x, y: p.pos.y, dir: p.direction};});
         players_arr.forEach(_ => {
             postMessage(new PlayerPositionMessage(formatted_positions));
         });

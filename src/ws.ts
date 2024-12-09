@@ -49,7 +49,7 @@ export class SpawnResponseMessage implements Message {
 export class PlayerPositionMessage implements Message {
     kind = MessageKind.player_position
     constructor (
-        public pos: {id: number, x: number, y: number}[]
+        public pos: {id: number, x: number, y: number, dir: Direction}[]
     ) {}
 }
 
@@ -77,7 +77,7 @@ export class PlayerTrailMessage implements Message {
     kind = MessageKind.player_trail
     constructor (
         public segments: {
-            [id: number]: {x: number, y: number}[]
+            [id: number]: {x: number, y: number, tick: number}[]
         },
     ) {}
 }

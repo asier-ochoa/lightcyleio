@@ -126,9 +126,9 @@ connection_button.addEventListener("click", ev => {
                     Object.entries(msg.segments).forEach(([str_id, s]) => {
                         const id = Number(str_id);
                         if (id === game_state.client_player.id) {
-                            game_state.client_player.segments = s.map((p) => {return {x: p.x, y: 600 - p.y};});
+                            game_state.client_player.segments = s.map((p) => {return {x: p.x, y: 600 - p.y, tick: p.tick};});
                         } else {
-                            game_state.other_players[id].segments = s.map((p) => {return {x: p.x, y: 600 - p.y};});
+                            game_state.other_players[id].segments = s.map((p) => {return {x: p.x, y: 600 - p.y, tick: p.tick};});
                         }
                     })
                     break;

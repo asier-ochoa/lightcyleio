@@ -67,7 +67,9 @@ Bun.serve({
                 if (outer_msg.kind === MessageKind.spawn_response) {
                     const msg = outer_msg as SpawnResponseMessage;
                     const conn = connections[msg.player_id];
-                    conn.send(s.serialize(msg), true);
+                    if (conn !== undefined){
+                        conn.send(s.serialize(msg), true);
+                    }
                 }
                 // Broadcast all player positions
                 if (outer_msg.kind === MessageKind.player_position) {
@@ -83,13 +85,17 @@ Bun.serve({
                 if (outer_msg.kind === MessageKind.player_disconnect) {
                     const msg = outer_msg as PlayerDisconnectMessage;
                     const conn = connections[msg.broadcast_id!];
-                    conn.send(s.serialize(msg), true);
+                    if (conn !== undefined){
+                        conn.send(s.serialize(msg), true);
+                    }
                 }
                 // Send player their grip
                 if (outer_msg.kind === MessageKind.player_grip) {
                     const msg = outer_msg as PlayerGripMessage;
                     const conn = connections[msg.id];
-                    conn.send(s.serialize(msg), true);
+                    if (conn !== undefined) {
+                        conn.send(s.serialize(msg), true);
+                    }
                 }
                 // Broadcast current tick to all clients
                 if (outer_msg.kind === MessageKind.tick) {
