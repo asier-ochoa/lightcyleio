@@ -6,49 +6,28 @@
     <title>Page Title</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
-    <script defer type='module' src='main.js'></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@v0.169.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@v0.169.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module" src='main.js'></script>
 </head>
 <body>
-    <div>
-        This is our game xd
-    </div>
-    <button id="ws_connect" class="control_buttons">
-        Connect to WS
-    </button>
-    <button id="spawn" class="control_buttons">
-        Spawn
-    </button>
-    <div id='debug_info'>
-        <div class='debug_value' value='game_state.client_player'></div>
-        <div class='debug_value' value='deltatime'></div>
-        <div>
-            Current grip: <div class='debug_value' value='game_state.client_player.grip' style="display: inline;"></div>
-        </div>
-        <div>
-            Server tick: <div class='debug_value' value='game_state.simulation_tick' style="display: inline;"></div>
-        </div>
-        <div>
-            fps: <div class='debug_value' value='fps' style="display: inline;"></div>
-        </div>
-    </div>
-    <canvas id='main_window' width='800' height='600'>
+    <canvas id='main_window'>
     </canvas>
 </body>
 <style>
-    #main_window {
-        border: 2px black solid;
+    body{
+        margin: 0;
     }
-    #debug_info {
-        border-radius: 16px;
-        background-color: skyblue;
-        padding: 6px;
-        margin: 6px;
+    
+    canvas {
+        display: block; /* fix necessary to remove space at bottom of canvas */
     }
-    .debug_value {
-        margin: 6px;
-    }
-    .control_buttons {
-        display: inline;
-    }
+  
 </style>
 </html>
