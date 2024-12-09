@@ -132,7 +132,7 @@ export class Player {
             this.player.position.clone().add(currentDirection)
         );
 
-
+        this.Update()
 
     }
 
@@ -261,6 +261,7 @@ export class Player {
 
     deletePlayer(){
         this.params.game.scene.remove( this.player );
+        this.params.game.scene.remove(this.trail)
 
     }
 

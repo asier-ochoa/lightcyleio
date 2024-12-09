@@ -13,7 +13,7 @@ export class PlayState extends State {
 
 
 	Update(deltaTime) {
-		this.player.Update(deltaTime);
+		// this.player.Update(deltaTime);
 		this.thirdPersonCamera.Update(deltaTime);
 	}
 
