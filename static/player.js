@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-
+import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import { serialize, deserialize } from './bundle/serial.js';
 
 // enum
@@ -14,6 +15,13 @@ const Direction = Object.freeze({
 export class Player {
     constructor(params) {
         this.params = params;
+
+
+
+
+
+
+
 
         switch (this.params.color.toString()) {
             case "0":
@@ -65,7 +73,7 @@ export class Player {
 
                 cycle.scale.set(0.3, 0.3, 0.3);
                 cycle.position.y = .5
-                cycle.rotateY(Math.PI/2)
+                cycle.rotateY(Math.PI / 2)
                 this.player.add(cycle);
             },
             undefined,
@@ -77,7 +85,7 @@ export class Player {
 
         this.connection = null;
 
-        if(params.client === true)
+        if (params.client === true)
             this.setUpInput()
 
         this.dir = 3
@@ -95,7 +103,29 @@ export class Player {
         this.trailWidth = 0.1;
 
 
+
+
         params.scene.add(this.player);
+
+
+        const fontLoader = new FontLoader();
+        fontLoader.load('./fonts/helvetiker_regular.typeface.json', (font) => {
+            const textGeometry = new TextGeometry("HELOOOOOOOOOOO", {
+                font: font,
+                size: 0.5, 
+                height: 0.1, 
+            });
+
+            const textMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            this.textMesh = new THREE.Mesh(textGeometry, textMaterial);
+
+            this.textMesh.position.set(0, 2, 0); 
+
+            this.player.add(this.textMesh);
+            this.textMesh.rotateY(-Math.PI/2)
+        });
+
+
 
         // this.player.rotateY(Math.Pi / 2)
 
@@ -138,7 +168,7 @@ export class Player {
     }
 
     setUpInput() {
-        
+
         const up = 0;
         const down = 1;
         const left = 2;
@@ -261,8 +291,8 @@ export class Player {
         return this.player.quaternion;
     }
 
-    deletePlayer(){
-        this.params.game.scene.remove( this.player );
+    deletePlayer() {
+        this.params.game.scene.remove(this.player);
         this.params.game.scene.remove(this.trail)
 
     }
