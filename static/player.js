@@ -200,7 +200,6 @@ export class Player {
                     break;
 
 
-
             }
 
             if (msg.direction !== undefined) {

@@ -5,7 +5,8 @@ export function createMap(scene, game_params) {
 
     // width == height so
     const gridSize = game_params.arena_bounds.width;
-    const gridDivisions = gridSize / 2;
+    const gridDivisions = gridSize / 2
+    console.log(game_params);
     const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x00ff00, 0x00ff00);
     scene.add(gridHelper);
 

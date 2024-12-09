@@ -33,9 +33,9 @@ class Game {
 
 		const fetchParams = async () => {
 			let data;
-			try{
+			try {
 				data = (await fetch("/api/game_params")).json()
-			} catch (err){
+			} catch (err) {
 				console.error(err)
 			}
 			return data
@@ -52,24 +52,24 @@ class Game {
 		this.color = color
 
 		console.log(this.firstTime)
-		if(this.firstTime === true){
+		if (this.firstTime === true) {
 			this.playState.setup(color)
 
 			// Making sure that the gameLoop is being called with the correct scope (or something like that). Callback shit.
 			this.renderer.setAnimationLoop(this.gameLoop.bind(this));
 		} else {
-			
+
 			mmg.connection.send(serialize({
 				player_id: mmg.id,
 				kind: 2,
 				color: Number(this.color)
 			}))
 
-			document.getElementById("main_window").hidden =false;
+			document.getElementById("main_window").hidden = false;
 			this.firstTime = false;
 
 		}
-		
+
 
 	}
 
@@ -118,7 +118,7 @@ function startGame() {
 
 	document.getElementById("remove").style.display = 'none';
 
-	
+
 	mmg.startGame(selectedRadioButton.value)
 }
 
@@ -128,6 +128,7 @@ document.getElementById("StartButton").onclick = startGame
 // Start of the program
 document.addEventListener("DOMContentLoaded", (e) => {
 
+	const chatbox = document.getElementById("chatbox");
 
 	mmg.setup()
 
@@ -147,6 +148,22 @@ document.addEventListener("DOMContentLoaded", (e) => {
 				//new player id
 				case 1:
 					mmg.id = msg.id
+
+					const pa = document.createElement("p");
+
+					const node = document.createTextNode(`Player ${msg.id} has joined the session.`);
+					pa.appendChild(node);
+
+
+
+
+					if (chatbox.childNodes.length > 5) {
+						chatbox.removeChild(chatbox.childNodes[0]); // Remove the first child
+					}
+					chatbox.appendChild(pa);
+
+
+
 					break;
 				case 3:
 					mmg.alive = true
@@ -155,26 +172,26 @@ document.addEventListener("DOMContentLoaded", (e) => {
 					var playingState = mmg.gameStateStack[0]
 
 					msg.pos.forEach(element => {
-						if(element !== null){
+						if (element !== null) {
 							if (element.id === mmg.id) {
 								playingState.player.updatePosition(element.x, element.y, element.dir)
-	
+
 							} else {
-								if(element.id in mmg.otherPlayers){
+								if (element.id in mmg.otherPlayers) {
 									mmg.otherPlayers[element.id].updatePosition(element.x, element.y, element.dir)
 								} else {
 									mmg.otherPlayers[element.id] = new Player({ scene: mmg.scene, color: element.c, game: mmg, client: false })
 								}
-								
+
 							}
-	
+
 
 						}
-					
+
 					});
 					break;
 				case 6:
-					if(msg.dc_id in mmg.otherPlayers){
+					if (msg.dc_id in mmg.otherPlayers) {
 						mmg.otherPlayers[msg.dc_id].deletePlayer()
 						delete mmg.otherPlayers[msg.dc_id]
 					}
@@ -199,17 +216,35 @@ document.addEventListener("DOMContentLoaded", (e) => {
 					break;
 
 				case 10:
-					if(msg.player_id === mmg.id){
+					if (msg.player_id === mmg.id) {
 						mmg.gameStateStack[0].player.deletePlayer()
 
-					
+
 						document.getElementById("main_window").hidden = true;
 						document.getElementById("remove").style.display = 'block';
 					} else {
 						mmg.otherPlayers[msg.player_id].deletePlayer()
 						delete mmg.otherPlayers[msg.player_id]
 					}
-				
+
+
+					const p = document.createElement("p");
+					if (msg.killer_id === -1) {
+						const node = document.createTextNode(`Player ${msg.player_id} was killed by the arena.`);
+						p.appendChild(node);
+
+
+					} else {
+						const node = document.createTextNode(`Player ${msg.player_id} was killed by ${msg.killer_id}.`);
+						p.appendChild(node);
+
+
+					}
+
+					if (chatbox.childNodes.length > 5) {
+						chatbox.removeChild(chatbox.childNodes[0]); // Remove the first child
+					}
+					chatbox.appendChild(p);
 
 
 					break;
