@@ -13,7 +13,7 @@ export const game_props = {
         height: 600
     },
     turn_grip_cost: 20,
-    grip_base_regen: 50000000, // Given in points per second
+    grip_base_regen: 5000, // Given in points per second
     max_grip: 100,
     max_trail_length: 1000,
 }
@@ -65,6 +65,8 @@ class GameState {
     player_count: number = 0
     // Tracks the current tick of the simulation
     current_tick: number = 0
+    // Tracks who has died this tick
+    death_arr: {p: number, killer: number}[] = []
 };
 
 let state = new GameState();
@@ -274,13 +276,58 @@ const get_trail_pos_arr = (t: Trail) => {
     return ret;
 }
 
+function* trail_iter(t: Trail) {
+    yield t;
+    let cur_trail = t.next_segment
+    while (cur_trail !== null) {
+        yield cur_trail;
+        cur_trail = cur_trail.next_segment;
+    }
+}
+
 const player_death = (state: GameState, p_id: number, killer_id: number) => {
     postMessage(new DeathMessage(p_id, killer_id));
     state.players[p_id].alive = false;
     state.players[p_id].trail = null;
     state.players[p_id].trail_tail = null;
     console.log(`Player ${p_id} was killed by`, killer_id === -1 ? "the arena" : (killer_id === p_id ? "himself" : `player ${killer_id}`));
-}
+};
+
+type point = {x: number, y: number};
+const collides = (s1_start: point, s1_end: point, s2_start: point, s2_end: point) => {
+    // Check orientation of segments
+    const s1_v = s1_start.x === s1_end.x;
+    const s2_v = s2_start.x === s2_end.x;
+    // If parallel, return false
+    if (s1_v && s2_v || !s1_v && !s2_v) {
+        return false;
+    }
+    if (s1_v) {
+        if (s1_start.y > s1_end.y) {
+            const tmp = s1_start;
+            s1_start = s1_end;
+            s1_end = tmp;
+        }
+        if (s2_start.x > s2_end.x) {
+            const tmp = s2_start;
+            s2_start = s2_end;
+            s2_end = tmp;
+        }
+        return (s1_start.x >= s2_start.x && s1_start.x <= s2_end.x) && (s2_start.y >= s1_start.y && s2_start.y <= s1_end.y)
+    } else {
+        if (s1_start.x > s1_end.x) {
+            const tmp = s1_start;
+            s1_start = s1_end;
+            s1_end = tmp;
+        }
+        if (s2_start.y > s2_end.y) {
+            const tmp = s2_start;
+            s2_start = s2_end;
+            s2_end = tmp;
+        }
+        return (s2_start.x >= s1_start.x && s2_start.x <= s1_end.x) && (s1_start.y >= s2_start.y && s1_start.y <= s2_end.y)
+    }
+};
 
 const print_trail = (start_pos: {x: number, y: number}, t: Trail) => {
     const writer = stdout.writer();
@@ -302,6 +349,9 @@ const game_loop = async () => {
     const alive_players_arr = players_arr.filter(([_, p]) => p.alive);
     const trails_arr = alive_players_arr.map(([_, p]) => p.trail)
     {
+        // Clear deaths
+        state.death_arr = [];
+
         // Update players' requested direction
         alive_players_arr.filter(
             ([_, p]) => p.requested_direction !== null && p.requested_direction !== p.direction && !is_opposite(p.direction, p.requested_direction)
@@ -336,9 +386,23 @@ const game_loop = async () => {
                 }
             })();
             if (next_pos.x > game_props.arena_bounds.width || next_pos.x < 0 || next_pos.y > game_props.arena_bounds.height || next_pos.y < 0){
-                player_death(state, Number(id), -1);
-                delete alive_players_arr[idx];
+                state.death_arr.push({p: Number(id), killer: -1});
             }
+
+            // Player vs trail collision
+            alive_players_arr.forEach(([i_id, i_p], idx) => {
+                if (i_p !== null) {
+                    let last_trail: Trail | null = null;
+                    for (let t of trail_iter(i_id !== id ? i_p.trail! : (i_p.trail!.next_segment !== null ? i_p.trail!.next_segment : i_p.trail!))) {
+                        if (last_trail != null) {
+                            if (collides(pos, next_pos, last_trail.end_pos, t.end_pos)) {
+                                state.death_arr.push({p: Number(id), killer: t.owner_id})
+                            }
+                        }
+                        last_trail = t;
+                    }
+                }
+            });
 
             // Move players according to their direction and regen their grip
             if (p.grip < game_props.max_grip) {
@@ -350,6 +414,11 @@ const game_loop = async () => {
         // Shrink each alive player's trail
         alive_players_arr.forEach(([_, p]) => {
             shrink_tail(p.pos, p.trail!, p.trail_tail!);
+        })
+
+        // DEATH HAS COME FOR ALL
+        state.death_arr.forEach(d => {
+            player_death(state, d.p, d.killer)
         })
     }
 
