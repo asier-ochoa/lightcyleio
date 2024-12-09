@@ -152,9 +152,10 @@ document.addEventListener("DOMContentLoaded", (e) => {
 
 
 				case 8:
+					document.getElementById("curGrip").innerText = msg.cur_grip
+					document.getElementById("regenRate").innerText = msg.regen_rate
 
 					break;
-
 				case 7:
 
 					break;
