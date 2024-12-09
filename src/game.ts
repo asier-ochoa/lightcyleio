@@ -12,9 +12,9 @@ export const game_props = {
         height: 600
     },
     turn_grip_cost: 20,
-    grip_base_regen: 500, // Given in points per second
+    grip_base_regen: 50000000, // Given in points per second
     max_grip: 100,
-    trail_decay_time: 5,// Given in seconds
+    max_trail_length: 1000,
 }
 
 export enum Direction {
@@ -55,7 +55,6 @@ type Player = {
 
 type Trail = {
     owner_id: number,
-    start_tick: number,
     end_pos: {x: number, y: number},
     next_segment: Trail | null,
 }
@@ -156,12 +155,12 @@ const make_new_trail_segment = (state: GameState, p_id: number) => {
     const player = state.players[p_id];
     // Case when player has no trail
     if (player.trail === null) {
-        player.trail = {start_tick: state.current_tick, end_pos: structuredClone(player.pos), owner_id: p_id, next_segment: null};
+        player.trail = {end_pos: structuredClone(player.pos), owner_id: p_id, next_segment: null};
         player.trail_tail = [player.trail, null];
     // Case when already existing trail
     // Add another segment
     } else {
-        const new_trail_segment: Trail = {start_tick: state.current_tick, end_pos: structuredClone(player.pos), owner_id: p_id, next_segment: player.trail};
+        const new_trail_segment: Trail = {end_pos: structuredClone(player.pos), owner_id: p_id, next_segment: player.trail};
         player.trail = new_trail_segment;
         player.trail_tail = get_trail_tail(new_trail_segment);
     }
@@ -175,27 +174,100 @@ const get_trail_tail = (t: Trail): [Trail, Trail | null] => {
         return [t, null]
     }
     let next_trail = cur_trail.next_segment;
+    if (next_trail === null) {
+        return [t, cur_trail]
+    }
+    let swap = cur_trail;
     while (next_trail !== null) {
+        swap = cur_trail;
         cur_trail = next_trail;
         next_trail = next_trail.next_segment;
     }
-    return [cur_trail, next_trail];
+    return [swap, cur_trail];
 }
 
-// const shrink_tail = (tail: [Trail, Trail | null]) => {
-//     if (tail[1] === null) {
-//         return;
-//     }
-//     // The distance the trail should shrink
-//     const tick_shrink_dist = (tail[1].start_tick - tail[0].start_tick) / (math);
-// }
+const get_trail_length = (start_pos: {x: number, y: number}, t: Trail) => {
+    let cur_trail = t.next_segment;
+    let last_pos = t.end_pos;
+    let distance = 0;
+    distance += (start_pos.x === t.end_pos.x) ? Math.abs(start_pos.y - t.end_pos.y) : Math.abs(start_pos.x - t.end_pos.x);
+    while (cur_trail !== null) {
+        distance += (last_pos.x === cur_trail.end_pos.x) ? Math.abs(last_pos.y - cur_trail.end_pos.y) : Math.abs(last_pos.x - cur_trail.end_pos.x);
+        last_pos = cur_trail.end_pos;
+        cur_trail = cur_trail.next_segment;
+    }
+    return distance;
+}
+
+
+// Last segment's end position gets pushed forwards if trail is longer than max
+const shrink_tail = (start_pos: {x: number, y: number}, t: Trail, tail: [Trail, Trail | null]) => {
+    const trail_length = get_trail_length(start_pos, t);
+    if (trail_length > game_props.max_trail_length) {
+        // Case when the trail is single segment
+        if (tail[1] === null) {
+            // Check if we gotta shrink on x or y axis
+            if (start_pos.x === tail[0].end_pos.x) {
+                const diff = start_pos.y - tail[0].end_pos.y;
+                // Start pos is above
+                if (diff > 0) {
+                    tail[0].end_pos.y += diff - game_props.max_trail_length; 
+                // Start pos is below
+                } else {
+                    tail[0].end_pos.y -= Math.abs(diff) - game_props.max_trail_length;
+                }
+            } else {
+                const diff = start_pos.x - tail[0].end_pos.x;
+                // Start pos is right
+                if (diff > 0) {
+                    tail[0].end_pos.x += diff - game_props.max_trail_length; 
+                // Start pos is left
+                } else {
+                    tail[0].end_pos.x -= Math.abs(diff) - game_props.max_trail_length;
+                }
+            }
+        } else {
+            if (tail[0].end_pos.x === tail[1].end_pos.x) {
+                const diff = tail[0].end_pos.y - tail[1].end_pos.y;
+                // If after removing the segement length is above max, delete the segment
+                if ((trail_length - Math.abs(diff)) > game_props.max_trail_length) {
+                    tail[0].next_segment = null;
+                    const new_trail = get_trail_tail(t)
+                    tail[0] = new_trail[0]
+                    tail[1] = new_trail[1]
+                    return;
+                }
+                if (diff > 0) {
+                    tail[1].end_pos.y += trail_length - game_props.max_trail_length;
+                } else {
+                    tail[1].end_pos.y -= trail_length - game_props.max_trail_length;
+                }
+            } else {
+                const diff = tail[0].end_pos.x - tail[1].end_pos.x;
+                // If after removing the segement length is above max, delete the segment
+                if ((trail_length - Math.abs(diff)) > game_props.max_trail_length) {
+                    tail[0].next_segment = null;
+                    const new_trail = get_trail_tail(t)
+                    tail[0] = new_trail[0]
+                    tail[1] = new_trail[1]
+                    return;
+                }
+                if (diff > 0) {
+                    tail[1].end_pos.x += trail_length - game_props.max_trail_length;
+                } else {
+                    tail[1].end_pos.x -= trail_length - game_props.max_trail_length;
+                }
+            }
+        }
+    }
+}
 
 // Returns an array with all segments of a trail
 const get_trail_pos_arr = (t: Trail) => {
-    const ret = [{...t.end_pos, tick: t.start_tick}];
+    const ret = [{...t.end_pos}];
     let cur_trail = t.next_segment;
     while(cur_trail !== null) {
-        ret.push({...cur_trail.end_pos, tick: cur_trail.start_tick});
+        ret.push({...cur_trail.end_pos});
         cur_trail = cur_trail.next_segment;
     }
     return ret;
@@ -204,7 +276,7 @@ const get_trail_pos_arr = (t: Trail) => {
 const print_trail = (start_pos: {x: number, y: number}, t: Trail) => {
     const writer = stdout.writer();
     let cur_trail = t.next_segment;
-    writer.write(`{x: ${start_pos.x}, y: ${start_pos.y}}`);
+    writer.write(`^{x: ${start_pos.x}, y: ${start_pos.y}} => {x: ${t.end_pos.x}, y: ${t.end_pos.y}}`);
     while(cur_trail !== null) {
         writer.write(` => {x: ${cur_trail.end_pos.x}, y: ${cur_trail.end_pos.y}}`);
         cur_trail = cur_trail.next_segment;
@@ -238,7 +310,7 @@ const game_loop = async () => {
         // Move players according to their direction and regen their grip
         alive_players_arr.forEach(([_, p]) => {
             if (p.grip < game_props.max_grip) {
-                p.grip += game_props.turn_grip_cost * game_props.simulation_tick_time;
+                p.grip += game_props.grip_base_regen * game_props.simulation_tick_time;
             }
             switch (p.direction) {
                 case Direction.up:
@@ -255,6 +327,11 @@ const game_loop = async () => {
                     break;
             }
         });
+
+        // Shrink each alive player's trail
+        alive_players_arr.forEach(([_, p]) => {
+            shrink_tail(p.pos, p.trail!, p.trail_tail!);
+        })
     }
 
     // Networking update

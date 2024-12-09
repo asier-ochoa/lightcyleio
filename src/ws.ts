@@ -78,7 +78,7 @@ export class PlayerTrailMessage implements Message {
     kind = MessageKind.player_trail
     constructor (
         public segments: {
-            [id: number]: {x: number, y: number, tick: number}[]
+            [id: number]: {x: number, y: number}[]
         },
     ) {}
 }
