@@ -10,12 +10,12 @@ export const game_props = {
     // Frontend can't handle rectangles
     arena_bounds: {
         width: 800,
-        height: 600
+        height: 800
     },
     turn_grip_cost: 20,
-    grip_base_regen: 5000, // Given in points per second
+    grip_base_regen: 1000, // Given in points per second
     max_grip: 100,
-    max_trail_length: 1000,
+    max_trail_length: 600,
 }
 
 export enum Direction {
@@ -102,12 +102,13 @@ const spawn_player = (state: GameState, id: number, color: Color, name: string) 
     } else {
         player.alive = true;
         player.pos = {
-            x:0,
-            y: 0
+            x: Math.floor(Math.random() * game_props.arena_bounds.width),
+            y: Math.floor(Math.random() * game_props.arena_bounds.height)
         };
         player.color = color;
         player.grip = game_props.max_grip;
         player.direction = Direction.right;
+        console.log("NIGGER", name)
         player.name = name.substring(0, 20);
         // Add a starting trail to player
         make_new_trail_segment(state, id);
@@ -394,16 +395,26 @@ const game_loop = async () => {
 
             // Player vs trail collision
             alive_players_arr.forEach(([i_id, i_p], idx) => {
-                if (i_p !== null) {
-                    let last_trail: Trail | null = null;
-                    for (let t of trail_iter(i_id !== id ? i_p.trail! : (i_p.trail!.next_segment !== null ? i_p.trail!.next_segment : i_p.trail!))) {
-                        if (last_trail != null) {
-                            if (collides(pos, next_pos, last_trail.end_pos, t.end_pos)) {
-                                state.death_arr.push({p: Number(id), killer: t.owner_id})
-                            }
-                        }
-                        last_trail = t;
+                const iter = trail_iter(i_p.trail!)
+                // If checking the trail of the currently evaled player, skip first segment
+                let last_trail: Trail | null = iter.next().value!;
+                if (i_id !== id) {
+                    if (collides(pos, next_pos, i_p.pos, last_trail.end_pos)) {
+                        state.death_arr.push({p: Number(id), killer: last_trail.owner_id})
                     }
+                } else {
+                    iter.next();
+                    if (last_trail.next_segment !== null) {
+                        last_trail = last_trail.next_segment;
+                    }
+                }
+                for (let t of iter) {
+                    if (last_trail != null) {
+                        if (collides(pos, next_pos, last_trail.end_pos, t.end_pos)) {
+                            state.death_arr.push({p: Number(id), killer: t.owner_id})
+                        }
+                    }
+                    last_trail = t;
                 }
             });
 

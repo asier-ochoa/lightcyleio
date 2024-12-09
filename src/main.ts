@@ -42,7 +42,7 @@ Bun.serve({
         // Base route is / which turns into index.html
         if (path === "/") return new Response(Bun.file("./static/index.html"));
         if (static_files.has(`./static${path}`)) {
-            return new Response(Bun.file(`./static${path}`));
+            return new Response(Bun.file(`./static${path}`), {headers: {"Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "Expires": "0"}});
         } else {
             console.log(`Couldn't find file with URL path: ${path}`)
             return new Response("Not found", {status: 404});

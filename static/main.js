@@ -58,11 +58,12 @@ class Game {
 			// Making sure that the gameLoop is being called with the correct scope (or something like that). Callback shit.
 			this.renderer.setAnimationLoop(this.gameLoop.bind(this));
 		} else {
-
+            console.log(document.getElementById("name-input").innerText)
 			mmg.connection.send(serialize({
 				player_id: mmg.id,
 				kind: 2,
-				color: Number(this.color)
+				color: Number(this.color),
+                name: "FUCK YOU"
 			}))
 
 			document.getElementById("main_window").hidden = false;
@@ -112,7 +113,8 @@ function startGame() {
 		mmg.connection.send(serialize({
 			player_id: mmg.id,
 			kind: 2,
-			color: Number(selectedRadioButton.value)
+			color: Number(selectedRadioButton.value),
+            name: "FUCK YOU"
 		}))
 	}
 
