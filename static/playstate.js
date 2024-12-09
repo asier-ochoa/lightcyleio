@@ -30,7 +30,7 @@ export class PlayState extends State {
 		this.thirdPersonCamera = new ThirdPersonCamera({ camera: this.camera, target: this.player , renderer: this.game.renderer});
 
 		
-		createMap(this.game.scene);
+		createMap(this.game.scene, this.game.game_params);
 
 	}
 

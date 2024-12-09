@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 
-export function createMap(scene) {
+export function createMap(scene, game_params) {
 
 
-    // Create the grid lines
-    const gridSize = 500;
-    const gridDivisions = 200;
+    // width == height so
+    const gridSize = game_params.arena_bounds.width;
+    const gridDivisions = gridSize / 2;
     const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x00ff00, 0x00ff00);
     scene.add(gridHelper);
 
@@ -18,9 +18,12 @@ export function createMap(scene) {
     
     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
 
+    gridHelper.translateX(gridSize/2)
+    gridHelper.translateZ(-gridSize/2)
 
-  
+
     floor.translateY(-1)
+    
 
     floor.rotateX(-Math.PI / 2)
 

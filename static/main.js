@@ -14,7 +14,7 @@ class Game {
 	}
 
 
-	setup() {
+	async setup() {
 
 		this.createScene();
 
@@ -30,8 +30,19 @@ class Game {
 		this.playState = new PlayState(this);
 
 
+		const fetchParams = async () => {
+			let data;
+			try{
+				data = (await fetch("/api/game_params")).json()
+			} catch (err){
+				console.error(err)
+			}
+			return data
+		}
+
 		this.gameStateStack.push(this.playState);
 
+		this.game_params = await fetchParams();
 	}
 
 
@@ -98,6 +109,7 @@ document.getElementById("StartButton").onclick = startGame
 
 // Start of the program
 document.addEventListener("DOMContentLoaded", (e) => {
+
 
 	mmg.setup()
 

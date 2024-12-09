@@ -104,6 +104,7 @@ export class Player {
 
 
     updatePosition(x, y, r) {
+        console.log(x, y)
         this.player.position.x = x
         this.player.position.z = -y
         this.dir = r;
