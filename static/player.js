@@ -15,7 +15,7 @@ export class Player {
     constructor(params) {
         this.params = params;
 
-        switch (this.params.color) {
+        switch (this.params.color.toString()) {
             case "0":
                 this.color = "#ff0000"
                 break;
@@ -76,7 +76,9 @@ export class Player {
 
 
         this.connection = null;
-        this.setUpInput()
+
+        if(params.client === true)
+            this.setUpInput()
 
         this.dir = 3
 
@@ -199,10 +201,8 @@ export class Player {
 
 
             }
-            console.log(msg)
 
             if (msg.direction !== undefined) {
-                console.log(msg)
                 this.params.game.connection.send(serialize(msg));
             }
 
@@ -257,6 +257,11 @@ export class Player {
             return new THREE.Quaternion();
         }
         return this.player.quaternion;
+    }
+
+    deletePlayer(){
+        this.params.game.scene.remove( this.player );
+
     }
 
 

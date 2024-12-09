@@ -4,6 +4,7 @@ import { MainMenuState } from './mainmenustate.js';
 import { PlayState } from './playstate.js';
 
 import { serialize, deserialize } from './bundle/serial.js';
+import { Player } from './player.js';
 
 
 
@@ -24,6 +25,8 @@ class Game {
 
 		this.gameStateStack = [];
 
+		this.otherPlayers = {}
+
 		this.playState = new PlayState(this);
 
 
@@ -36,6 +39,7 @@ class Game {
 
 
 		this.playState.setup(color)
+		this.color = color
 
 		// Making sure that the gameLoop is being called with the correct scope (or something like that). Callback shit.
 		this.renderer.setAnimationLoop(this.gameLoop.bind(this));
@@ -123,20 +127,27 @@ document.addEventListener("DOMContentLoaded", (e) => {
 					msg.pos.forEach(element => {
 						if (element.id === mmg.id) {
 							playingState.player.updatePosition(element.x, element.y, element.dir)
-							console.log(element.dir)
-
 
 						} else {
-							//TODO
+							if(element.id in mmg.otherPlayers){
+								mmg.otherPlayers[element.id].updatePosition(element.x, element.y, element.dir)
+							} else {
+								console.log(msg)
+								mmg.otherPlayers[element.id] = new Player({ scene: mmg.scene, color: element.c, game: mmg, client: false })
+							}
+							
 						}
 
 					});
-
-
-
 					break;
 				case 6:
-
+					if(msg.dc_id in mmg.otherPlayers){
+						mmg.otherPlayers[msg.dc_id].deletePlayer()
+						delete mmg.otherPlayers[msg.dc_id]
+					}
+			
+					else
+						console.error("A player that is not in the session disconnected??")
 					break;
 
 
@@ -154,7 +165,6 @@ document.addEventListener("DOMContentLoaded", (e) => {
 
 					break;
 				default:
-					console.log(msg)
 					throw ("Unknown message kind received");
 			}
 		})

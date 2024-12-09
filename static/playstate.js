@@ -24,7 +24,7 @@ export class PlayState extends State {
 	setup(color) {
 
 		// Creating entities 
-		this.player = new Player({ scene: this.game.scene, color: color, game: this.game });
+		this.player = new Player({ scene: this.game.scene, color: color, game: this.game, client: true });
 		this.player.connection = this.game.connection
 		this.camera = createCamera();
 		this.thirdPersonCamera = new ThirdPersonCamera({ camera: this.camera, target: this.player , renderer: this.game.renderer});
