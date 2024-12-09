@@ -1,5 +1,5 @@
 import type { ServerWebSocket } from "bun";
-import { Direction } from "./game.ts";
+import { Direction, Color } from "./game.ts";
 
 export enum MessageKind {
     new_player = 0,
@@ -32,7 +32,8 @@ export class NewPlayerIdMessage implements Message {
 export class SpawnMessage implements Message {
     kind = MessageKind.spawn
     constructor (
-        public player_id: number
+        public player_id: number,
+        public color: Color
     ) {}
 }
 
@@ -49,7 +50,7 @@ export class SpawnResponseMessage implements Message {
 export class PlayerPositionMessage implements Message {
     kind = MessageKind.player_position
     constructor (
-        public pos: {id: number, x: number, y: number, dir: Direction}[]
+        public pos: {id: number, x: number, y: number, dir: Direction, c: Color}[]
     ) {}
 }
 
